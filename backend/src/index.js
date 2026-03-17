@@ -19,6 +19,12 @@ app.set('io', io);
 app.use('/api/items', itemsRouter);
 app.get('/health', (_, res) => res.json({ ok: true }));
 
+// Serve frontend static files if present (production)
+const path = require('path');
+const frontendPath = path.join(__dirname, '../../public');
+app.use(express.static(frontendPath));
+app.get('*', (_, res) => res.sendFile(path.join(frontendPath, 'index.html')));
+
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
   socket.on('disconnect', () => console.log('Client disconnected:', socket.id));

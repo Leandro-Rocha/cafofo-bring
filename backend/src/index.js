@@ -17,17 +17,15 @@ app.use((req, res, next) => {
   next();
 });
 app.use(cors());
-app.use(express.json({
-  verify: (req, res, buf) => { req.rawBody = buf.toString(); }
-}));
+
+// Alexa route must be registered BEFORE express.json() — adapter parses body itself
+app.post('/alexa', require('./routes/alexa')(io));
+app.get('/alexa', (_, res) => res.json({ ok: true, endpoint: 'alexa' }));
+
+app.use(express.json());
 app.set('io', io);
 
 app.use('/api/items', itemsRouter);
-app.post('/alexa', (req, res, next) => {
-  console.log('[alexa] POST recebido de', req.ip);
-  next();
-}, require('./routes/alexa')(io));
-app.get('/alexa', (_, res) => res.json({ ok: true, endpoint: 'alexa' }));
 app.get('/health', (_, res) => res.json({ ok: true }));
 
 // Serve frontend static files if present (production)

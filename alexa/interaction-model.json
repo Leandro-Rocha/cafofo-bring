@@ -1,0 +1,60 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "lista de compras",
+      "intents": [
+        {
+          "name": "AddItemIntent",
+          "slots": [
+            { "name": "item",      "type": "AMAZON.SearchQuery" },
+            { "name": "quantidade","type": "AMAZON.SearchQuery" }
+          ],
+          "samples": [
+            "adicionar {item}",
+            "adiciona {item}",
+            "coloca {item} na lista",
+            "colocar {item} na lista",
+            "preciso de {item}",
+            "falta {item}",
+            "adicionar {quantidade} de {item}",
+            "adiciona {quantidade} de {item}",
+            "coloca {quantidade} de {item} na lista"
+          ]
+        },
+        {
+          "name": "RemoveItemIntent",
+          "slots": [
+            { "name": "item", "type": "AMAZON.SearchQuery" }
+          ],
+          "samples": [
+            "remover {item}",
+            "remove {item}",
+            "tirar {item} da lista",
+            "tira {item} da lista",
+            "deletar {item}",
+            "apagar {item}",
+            "não precisa mais de {item}",
+            "já tem {item}"
+          ]
+        },
+        {
+          "name": "ListItemsIntent",
+          "slots": [],
+          "samples": [
+            "o que tem na lista",
+            "quais são os itens",
+            "ler a lista",
+            "listar itens",
+            "o que precisa comprar",
+            "o que falta comprar",
+            "lê a lista"
+          ]
+        },
+        { "name": "AMAZON.HelpIntent" },
+        { "name": "AMAZON.CancelIntent" },
+        { "name": "AMAZON.StopIntent" },
+        { "name": "AMAZON.NavigateHomeIntent" }
+      ]
+    }
+  }
+}

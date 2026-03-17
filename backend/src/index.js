@@ -17,6 +17,7 @@ app.use(express.json());
 app.set('io', io);
 
 app.use('/api/items', itemsRouter);
+app.post('/alexa', require('./routes/alexa')(io));
 app.get('/health', (_, res) => res.json({ ok: true }));
 
 // Serve frontend static files if present (production)

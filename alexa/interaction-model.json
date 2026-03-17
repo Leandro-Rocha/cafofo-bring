@@ -1,7 +1,7 @@
 {
   "interactionModel": {
     "languageModel": {
-      "invocationName": "lista mercado",
+      "invocationName": "lista cafofo",
       "intents": [
         {
           "name": "AddItemIntent",
@@ -15,9 +15,9 @@
             "colocar {item} na lista",
             "preciso de {item}",
             "falta {item}",
-            "adicionar {item} na lista mercado",
-            "adiciona {item} na lista mercado",
-            "coloca {item} na lista mercado"
+            "adicionar {item} na lista cafofo",
+            "adiciona {item} na lista cafofo",
+            "coloca {item} na lista cafofo"
           ]
         },
         {
@@ -34,8 +34,8 @@
             "apagar {item}",
             "não precisa mais de {item}",
             "já tem {item}",
-            "remover {item} da lista mercado",
-            "remove {item} da lista mercado"
+            "remover {item} da lista cafofo",
+            "remove {item} da lista cafofo"
           ]
         },
         {

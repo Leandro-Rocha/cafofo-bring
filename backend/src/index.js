@@ -21,7 +21,7 @@ app.get('/health', (_, res) => res.json({ ok: true }));
 
 // Serve frontend static files if present (production)
 const path = require('path');
-const frontendPath = path.join(__dirname, '../../public');
+const frontendPath = path.join(__dirname, '../public');
 app.use(express.static(frontendPath));
 app.get('*', (_, res) => res.sendFile(path.join(frontendPath, 'index.html')));
 

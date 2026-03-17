@@ -47,9 +47,10 @@ function handle(body) {
       const item = slots?.item?.value;
       if (!item) return ask('Qual item você quer adicionar?', 'Diga o nome do item.');
 
+      const capitalized = item.charAt(0).toUpperCase() + item.slice(1);
       const result = db.prepare(
         'INSERT INTO items (name, category, quantity) VALUES (?, ?, ?)'
-      ).run(item, 'Outros', null);
+      ).run(capitalized, 'Outros', null);
 
       const newItem = db.prepare('SELECT * FROM items WHERE id = ?').get(result.lastInsertRowid);
       io?.emit('item:added', newItem);

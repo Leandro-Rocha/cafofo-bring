@@ -159,7 +159,8 @@ const skill = Alexa.SkillBuilders.custom()
   .addErrorHandlers(ErrorHandler)
   .create();
 
-const adapter = new ExpressAdapter(skill, true, true);
+// Signature verification disabled — private skill on personal server
+const adapter = new ExpressAdapter(skill, false, false);
 
 module.exports = function (ioInstance) {
   io = ioInstance;

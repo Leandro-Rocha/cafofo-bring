@@ -52,5 +52,5 @@ jobs:
             -e PORT=3001 \
             -e DB_PATH=/data/shopping.db \
             -v cafofo-bring-db:/data \
-            -p 3001:3001 \
+            -p 4001:3001 \
             ghcr.io/leandro-rocha/cafofo-bring:latest

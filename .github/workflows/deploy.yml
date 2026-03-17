@@ -1,4 +1,4 @@
-name: Build & Deploy
+name: Build & Publish
 
 on:
   push:
@@ -35,22 +35,3 @@ jobs:
           tags: ghcr.io/${{ env.OWNER }}/cafofo-bring:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-  deploy:
-    needs: build
-    runs-on: [self-hosted, casaos]
-
-    steps:
-      - name: Pull & restart
-        run: |
-          docker pull ghcr.io/leandro-rocha/cafofo-bring:latest
-          docker stop cafofo-bring || true
-          docker rm cafofo-bring || true
-          docker run -d \
-            --name cafofo-bring \
-            --restart unless-stopped \
-            -e PORT=3001 \
-            -e DB_PATH=/data/shopping.db \
-            -v cafofo-bring-db:/data \
-            -p 4001:3001 \
-            ghcr.io/leandro-rocha/cafofo-bring:latest

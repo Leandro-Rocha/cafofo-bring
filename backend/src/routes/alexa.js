@@ -1,163 +1,121 @@
-const Alexa = require('ask-sdk-core');
-const { ExpressAdapter } = require('ask-sdk-express-adapter');
 const db = require('../db');
 
 let io;
 
-// ── Handlers ────────────────────────────────────────────────────────────────
+function speech(text) {
+  return {
+    version: '1.0',
+    response: {
+      outputSpeech: { type: 'PlainText', text },
+      shouldEndSession: true,
+    },
+  };
+}
 
-const LaunchHandler = {
-  canHandle(input) {
-    return Alexa.getRequestType(input.requestEnvelope) === 'LaunchRequest';
-  },
-  handle(input) {
+function ask(text, reprompt) {
+  return {
+    version: '1.0',
+    response: {
+      outputSpeech: { type: 'PlainText', text },
+      reprompt: { outputSpeech: { type: 'PlainText', text: reprompt } },
+      shouldEndSession: false,
+    },
+  };
+}
+
+function handle(body) {
+  const reqType = body?.request?.type;
+  const intentName = body?.request?.intent?.name;
+  const slots = body?.request?.intent?.slots || {};
+
+  console.log(`[alexa] type=${reqType} intent=${intentName}`);
+
+  if (reqType === 'LaunchRequest') {
     const { n } = db.prepare('SELECT count(*) as n FROM items WHERE purchased = 0').get();
     const msg = n > 0
-      ? `Lista de compras aberta. Você tem ${n} ${n === 1 ? 'item' : 'itens'} pendente${n === 1 ? '' : 's'}.`
-      : 'Lista de compras aberta. A lista está vazia.';
-    return input.responseBuilder
-      .speak(msg)
-      .reprompt('Posso adicionar ou remover itens da lista.')
-      .getResponse();
-  },
-};
+      ? `Lista aberta. Você tem ${n} ${n === 1 ? 'item' : 'itens'} pendente${n === 1 ? '' : 's'}.`
+      : 'Lista aberta. A lista está vazia.';
+    return ask(msg, 'Posso adicionar ou remover itens.');
+  }
 
-const AddItemHandler = {
-  canHandle(input) {
-    return Alexa.getRequestType(input.requestEnvelope) === 'IntentRequest'
-      && Alexa.getIntentName(input.requestEnvelope) === 'AddItemIntent';
-  },
-  handle(input) {
-    const item = Alexa.getSlotValue(input.requestEnvelope, 'item');
+  if (reqType === 'SessionEndedRequest') {
+    return { version: '1.0', response: {} };
+  }
 
-    if (!item) {
-      return input.responseBuilder
-        .speak('Qual item você quer adicionar?')
-        .reprompt('Diga o nome do item.')
-        .getResponse();
+  if (reqType === 'IntentRequest') {
+    if (intentName === 'AddItemIntent') {
+      const item = slots?.item?.value;
+      if (!item) return ask('Qual item você quer adicionar?', 'Diga o nome do item.');
+
+      const result = db.prepare(
+        'INSERT INTO items (name, category, quantity) VALUES (?, ?, ?)'
+      ).run(item, 'Outros', null);
+
+      const newItem = db.prepare('SELECT * FROM items WHERE id = ?').get(result.lastInsertRowid);
+      io?.emit('item:added', newItem);
+
+      return speech(`${item} adicionado à lista.`);
     }
 
-    const result = db.prepare(
-      'INSERT INTO items (name, category, quantity) VALUES (?, ?, ?)'
-    ).run(item, 'Outros', null);
+    if (intentName === 'RemoveItemIntent') {
+      const item = slots?.item?.value;
+      if (!item) return ask('Qual item você quer remover?', 'Diga o nome do item.');
 
-    const newItem = db.prepare('SELECT * FROM items WHERE id = ?').get(result.lastInsertRowid);
-    io?.emit('item:added', newItem);
+      const found = db.prepare(
+        'SELECT * FROM items WHERE purchased = 0 AND lower(name) LIKE lower(?)'
+      ).get(`%${item}%`);
 
-    return input.responseBuilder.speak(`${item} adicionado à lista.`).getResponse();
-  },
-};
+      if (!found) return speech(`Não encontrei ${item} na lista.`);
 
-const RemoveItemHandler = {
-  canHandle(input) {
-    return Alexa.getRequestType(input.requestEnvelope) === 'IntentRequest'
-      && Alexa.getIntentName(input.requestEnvelope) === 'RemoveItemIntent';
-  },
-  handle(input) {
-    const item = Alexa.getSlotValue(input.requestEnvelope, 'item');
+      db.prepare('DELETE FROM items WHERE id = ?').run(found.id);
+      io?.emit('item:deleted', { id: found.id });
 
-    if (!item) {
-      return input.responseBuilder
-        .speak('Qual item você quer remover?')
-        .reprompt('Diga o nome do item.')
-        .getResponse();
+      return speech(`${found.name} removido da lista.`);
     }
 
-    const found = db.prepare(
-      'SELECT * FROM items WHERE purchased = 0 AND lower(name) LIKE lower(?)'
-    ).get(`%${item}%`);
+    if (intentName === 'ListItemsIntent') {
+      const items = db.prepare('SELECT name FROM items WHERE purchased = 0 ORDER BY name').all();
+      if (items.length === 0) return speech('A lista está vazia.');
 
-    if (!found) {
-      return input.responseBuilder
-        .speak(`Não encontrei ${item} na lista.`)
-        .getResponse();
+      const nomes = items.map((i) => i.name);
+      const lista = nomes.length === 1
+        ? nomes[0]
+        : nomes.slice(0, -1).join(', ') + ' e ' + nomes[nomes.length - 1];
+
+      return speech(`Na lista tem: ${lista}.`);
     }
 
-    db.prepare('DELETE FROM items WHERE id = ?').run(found.id);
-    io?.emit('item:deleted', { id: found.id });
-
-    return input.responseBuilder
-      .speak(`${found.name} removido da lista.`)
-      .getResponse();
-  },
-};
-
-const ListItemsHandler = {
-  canHandle(input) {
-    return Alexa.getRequestType(input.requestEnvelope) === 'IntentRequest'
-      && Alexa.getIntentName(input.requestEnvelope) === 'ListItemsIntent';
-  },
-  handle(input) {
-    const items = db.prepare('SELECT name FROM items WHERE purchased = 0 ORDER BY name').all();
-
-    if (items.length === 0) {
-      return input.responseBuilder.speak('A lista está vazia.').getResponse();
-    }
-
-    const nomes = items.map((i) => i.name);
-    const lista = nomes.length === 1
-      ? nomes[0]
-      : nomes.slice(0, -1).join(', ') + ' e ' + nomes[nomes.length - 1];
-
-    return input.responseBuilder
-      .speak(`Na lista tem: ${lista}.`)
-      .getResponse();
-  },
-};
-
-const HelpHandler = {
-  canHandle(input) {
-    return Alexa.getRequestType(input.requestEnvelope) === 'IntentRequest'
-      && Alexa.getIntentName(input.requestEnvelope) === 'AMAZON.HelpIntent';
-  },
-  handle(input) {
-    return input.responseBuilder
-      .speak('Você pode dizer: adicionar leite, remover ovos, ou o que tem na lista.')
-      .reprompt('O que você quer fazer?')
-      .getResponse();
-  },
-};
-
-const CancelStopHandler = {
-  canHandle(input) {
-    return Alexa.getRequestType(input.requestEnvelope) === 'IntentRequest'
-      && ['AMAZON.CancelIntent', 'AMAZON.StopIntent'].includes(
-        Alexa.getIntentName(input.requestEnvelope)
+    if (['AMAZON.HelpIntent'].includes(intentName)) {
+      return ask(
+        'Você pode dizer: adicionar leite, remover ovos, ou o que tem na lista.',
+        'O que você quer fazer?'
       );
-  },
-  handle(input) {
-    return input.responseBuilder.speak('Até logo!').getResponse();
-  },
-};
+    }
 
-const ErrorHandler = {
-  canHandle: () => true,
-  handle(input, error) {
-    console.error('Alexa error:', error);
-    return input.responseBuilder
-      .speak('Desculpe, ocorreu um erro. Tente novamente.')
-      .getResponse();
-  },
-};
+    if (['AMAZON.CancelIntent', 'AMAZON.StopIntent'].includes(intentName)) {
+      return speech('Até logo!');
+    }
+  }
 
-// ── Skill & adapter ──────────────────────────────────────────────────────────
-
-const skill = Alexa.SkillBuilders.custom()
-  .addRequestHandlers(
-    LaunchHandler,
-    AddItemHandler,
-    RemoveItemHandler,
-    ListItemsHandler,
-    HelpHandler,
-    CancelStopHandler
-  )
-  .addErrorHandlers(ErrorHandler)
-  .create();
-
-// Signature verification disabled — private skill on personal server
-const adapter = new ExpressAdapter(skill, false, false);
+  return speech('Desculpe, não entendi. Tente novamente.');
+}
 
 module.exports = function (ioInstance) {
   io = ioInstance;
-  return adapter.getRequestHandlers();
+
+  return (req, res) => {
+    let body = '';
+    req.on('data', (chunk) => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const parsed = JSON.parse(body);
+        console.log('[alexa] body recebido:', JSON.stringify(parsed).slice(0, 200));
+        const response = handle(parsed);
+        res.json(response);
+      } catch (err) {
+        console.error('[alexa] erro:', err.message);
+        res.status(500).json({ error: err.message });
+      }
+    });
+  };
 };

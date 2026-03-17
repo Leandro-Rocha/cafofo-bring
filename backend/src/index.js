@@ -13,7 +13,9 @@ const io = new Server(server, {
 });
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({
+  verify: (req, res, buf) => { req.rawBody = buf.toString(); }
+}));
 app.set('io', io);
 
 app.use('/api/items', itemsRouter);

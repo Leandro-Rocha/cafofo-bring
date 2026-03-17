@@ -1,0 +1,52 @@
+const express = require('express');
+const router = express.Router();
+const db = require('../db');
+
+router.get('/', (req, res) => {
+  const items = db.prepare(
+    'SELECT * FROM items ORDER BY purchased ASC, category ASC, created_at ASC'
+  ).all();
+  res.json(items);
+});
+
+router.post('/', (req, res) => {
+  const { name, category = 'Outros', quantity } = req.body;
+  if (!name?.trim()) return res.status(400).json({ error: 'Nome obrigatório' });
+
+  const result = db.prepare(
+    'INSERT INTO items (name, category, quantity) VALUES (?, ?, ?)'
+  ).run(name.trim(), category, quantity?.trim() || null);
+
+  const item = db.prepare('SELECT * FROM items WHERE id = ?').get(result.lastInsertRowid);
+  req.app.get('io').emit('item:added', item);
+  res.status(201).json(item);
+});
+
+router.patch('/:id/toggle', (req, res) => {
+  const item = db.prepare('SELECT * FROM items WHERE id = ?').get(req.params.id);
+  if (!item) return res.status(404).json({ error: 'Item não encontrado' });
+
+  const purchased = item.purchased ? 0 : 1;
+  const purchased_at = purchased ? new Date().toISOString() : null;
+
+  db.prepare('UPDATE items SET purchased = ?, purchased_at = ? WHERE id = ?')
+    .run(purchased, purchased_at, req.params.id);
+
+  const updated = db.prepare('SELECT * FROM items WHERE id = ?').get(req.params.id);
+  req.app.get('io').emit('item:updated', updated);
+  res.json(updated);
+});
+
+router.delete('/purchased/clear', (req, res) => {
+  db.prepare('DELETE FROM items WHERE purchased = 1').run();
+  req.app.get('io').emit('purchased:cleared');
+  res.status(204).end();
+});
+
+router.delete('/:id', (req, res) => {
+  db.prepare('DELETE FROM items WHERE id = ?').run(req.params.id);
+  req.app.get('io').emit('item:deleted', { id: parseInt(req.params.id) });
+  res.status(204).end();
+});
+
+module.exports = router;

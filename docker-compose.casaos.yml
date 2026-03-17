@@ -1,0 +1,29 @@
+services:
+  backend:
+    image: ghcr.io/leandro-rocha/cafofo-bring-api:latest
+    container_name: cafofo-bring-api
+    restart: unless-stopped
+    environment:
+      - PORT=3001
+      - DB_PATH=/data/shopping.db
+    volumes:
+      - db-data:/data
+    networks:
+      - app
+
+  frontend:
+    image: ghcr.io/leandro-rocha/cafofo-bring-web:latest
+    container_name: cafofo-bring-web
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+    networks:
+      - app
+
+networks:
+  app:
+
+volumes:
+  db-data:

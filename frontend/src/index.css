@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  font-family: 'Inter', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: #f3f4f6;
+  overscroll-behavior: none;
+}
+
+.item-card {
+  transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
+}
+
+.item-card:active {
+  transform: scale(0.94);
+}

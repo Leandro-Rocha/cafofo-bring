@@ -1,22 +1,28 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { getCategoryMeta } from '../categories';
 
 export default function ItemBlock({ item, onToggle, onDelete }) {
   const [holding, setHolding] = useState(false);
+  const holdTimer = useRef(null);
+  const didHold = useRef(false);
   const meta = getCategoryMeta(item.category);
 
-  let holdTimer;
-
-  const handlePressStart = () => {
-    holdTimer = setTimeout(() => {
+  const startHold = () => {
+    didHold.current = false;
+    holdTimer.current = setTimeout(() => {
+      didHold.current = true;
       setHolding(true);
     }, 500);
   };
 
-  const handlePressEnd = () => {
-    clearTimeout(holdTimer);
-    if (!holding) onToggle(item.id);
-    setHolding(false);
+  const endHold = () => {
+    clearTimeout(holdTimer.current);
+    if (!didHold.current) onToggle(item.id);
+  };
+
+  const cancel = () => {
+    clearTimeout(holdTimer.current);
+    didHold.current = false;
   };
 
   if (holding) {
@@ -48,11 +54,12 @@ export default function ItemBlock({ item, onToggle, onDelete }) {
         minHeight: 90,
         opacity: item.purchased ? 0.55 : 1,
       }}
-      onMouseDown={handlePressStart}
-      onMouseUp={handlePressEnd}
-      onMouseLeave={() => clearTimeout(holdTimer)}
-      onTouchStart={handlePressStart}
-      onTouchEnd={handlePressEnd}
+      onMouseDown={startHold}
+      onMouseUp={endHold}
+      onMouseLeave={cancel}
+      onTouchStart={(e) => { e.preventDefault(); startHold(); }}
+      onTouchEnd={(e) => { e.preventDefault(); endHold(); }}
+      onTouchCancel={cancel}
     >
       <span className="text-2xl mb-1" style={{ filter: item.purchased ? 'grayscale(1)' : 'none' }}>
         {meta.emoji}

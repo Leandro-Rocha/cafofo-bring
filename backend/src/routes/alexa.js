@@ -111,10 +111,11 @@ module.exports = function (ioInstance) {
         const parsed = JSON.parse(body);
         console.log('[alexa] body recebido:', JSON.stringify(parsed).slice(0, 200));
         const response = handle(parsed);
+        console.log('[alexa] resposta:', JSON.stringify(response).slice(0, 200));
         res.json(response);
       } catch (err) {
-        console.error('[alexa] erro:', err.message);
-        res.status(500).json({ error: err.message });
+        console.error('[alexa] erro:', err.stack);
+        res.json(speech('Desculpe, ocorreu um erro interno.'));
       }
     });
   };

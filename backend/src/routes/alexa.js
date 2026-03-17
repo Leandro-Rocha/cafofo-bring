@@ -29,7 +29,6 @@ const AddItemHandler = {
   },
   handle(input) {
     const item = Alexa.getSlotValue(input.requestEnvelope, 'item');
-    const quantidade = Alexa.getSlotValue(input.requestEnvelope, 'quantidade');
 
     if (!item) {
       return input.responseBuilder
@@ -40,16 +39,12 @@ const AddItemHandler = {
 
     const result = db.prepare(
       'INSERT INTO items (name, category, quantity) VALUES (?, ?, ?)'
-    ).run(item, 'Outros', quantidade || null);
+    ).run(item, 'Outros', null);
 
     const newItem = db.prepare('SELECT * FROM items WHERE id = ?').get(result.lastInsertRowid);
     io?.emit('item:added', newItem);
 
-    const resposta = quantidade
-      ? `${quantidade} de ${item} adicionado à lista.`
-      : `${item} adicionado à lista.`;
-
-    return input.responseBuilder.speak(resposta).getResponse();
+    return input.responseBuilder.speak(`${item} adicionado à lista.`).getResponse();
   },
 };
 

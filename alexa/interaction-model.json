@@ -6,8 +6,7 @@
         {
           "name": "AddItemIntent",
           "slots": [
-            { "name": "item",      "type": "AMAZON.SearchQuery" },
-            { "name": "quantidade","type": "AMAZON.SearchQuery" }
+            { "name": "item", "type": "AMAZON.SearchQuery" }
           ],
           "samples": [
             "adicionar {item}",
@@ -15,10 +14,7 @@
             "coloca {item} na lista",
             "colocar {item} na lista",
             "preciso de {item}",
-            "falta {item}",
-            "adicionar {quantidade} de {item}",
-            "adiciona {quantidade} de {item}",
-            "coloca {quantidade} de {item} na lista"
+            "falta {item}"
           ]
         },
         {

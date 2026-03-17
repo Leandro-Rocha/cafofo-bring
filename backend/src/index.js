@@ -12,6 +12,10 @@ const io = new Server(server, {
   cors: { origin: '*' }
 });
 
+app.use((req, res, next) => {
+  console.log(`[req] ${req.method} ${req.url}`);
+  next();
+});
 app.use(cors());
 app.use(express.json({
   verify: (req, res, buf) => { req.rawBody = buf.toString(); }

@@ -1,4 +1,4 @@
-const { makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
+const { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, Browsers } = require('@whiskeysockets/baileys');
 const QRCode = require('qrcode');
 const pino = require('pino');
 const path = require('path');
@@ -77,12 +77,15 @@ async function connect() {
   fs.mkdirSync(AUTH_DIR, { recursive: true });
 
   const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
+  const { version, isLatest } = await fetchLatestBaileysVersion();
+  console.log(`[whatsapp] WA v${version.join('.')} isLatest=${isLatest}`);
 
   sock = makeWASocket({
+    version,
     auth: state,
-    printQRInTerminal: false,
+    printQRInTerminal: true,
     logger: pino({ level: 'silent' }),
-    browser: ['Cafofo Bring', 'Chrome', '1.0.0'],
+    browser: Browsers.ubuntu('Chrome'),
   });
 
   sock.ev.on('creds.update', saveCreds);

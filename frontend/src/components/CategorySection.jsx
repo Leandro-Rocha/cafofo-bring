@@ -6,14 +6,17 @@ export default function CategorySection({ category, items, onToggle, onDelete })
 
   return (
     <section className="mt-5">
-      <div className="flex items-center gap-2 mb-2 px-1">
-        <span className="text-base">{meta.emoji}</span>
-        <h2 className="text-sm font-bold uppercase tracking-wider" style={{ color: meta.color }}>
+      <div
+        className="flex items-center gap-2 mb-3 px-3 py-2 rounded-2xl"
+        style={{ background: meta.bg, border: `1.5px solid ${meta.border}` }}
+      >
+        <span className="text-xl">{meta.emoji}</span>
+        <h2 className="text-sm font-extrabold uppercase tracking-widest flex-1" style={{ color: meta.color }}>
           {category}
         </h2>
         <span
-          className="text-xs font-semibold rounded-full px-2 py-0.5"
-          style={{ background: meta.bg, color: meta.color, border: `1px solid ${meta.border}` }}
+          className="text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center"
+          style={{ background: meta.color, color: 'white' }}
         >
           {items.length}
         </span>

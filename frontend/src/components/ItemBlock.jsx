@@ -28,31 +28,29 @@ export default function ItemBlock({ item, onToggle, onDelete }) {
   if (holding) {
     return (
       <div
-        className="item-card relative rounded-2xl p-3 flex flex-col items-center justify-center text-center cursor-pointer select-none border-2"
-        style={{ background: '#fef2f2', borderColor: '#fca5a5', minHeight: 90 }}
+        className="item-card item-enter relative rounded-2xl p-3 flex flex-col items-center justify-center text-center cursor-pointer select-none"
+        style={{ background: '#fef2f2', border: '2px solid #fca5a5', minHeight: 90 }}
         onClick={() => setHolding(false)}
       >
         <button
-          className="absolute top-1 right-1 text-red-400 text-lg leading-none p-1"
+          className="absolute top-1 right-1 text-red-400 text-base leading-none p-1"
           onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
-          aria-label="Remover"
-        >
-          ✕
-        </button>
+        >✕</button>
         <span className="text-2xl mb-1">🗑️</span>
-        <span className="text-xs text-red-400 font-medium">Remover?</span>
+        <span className="text-xs text-red-400 font-semibold">Remover?</span>
       </div>
     );
   }
 
   return (
     <div
-      className="item-card rounded-2xl p-3 flex flex-col items-center justify-center text-center cursor-pointer select-none shadow-sm border"
+      className="item-card item-enter rounded-2xl p-3 flex flex-col items-center justify-center text-center cursor-pointer select-none"
       style={{
-        background: item.purchased ? '#f9fafb' : meta.bg,
-        borderColor: item.purchased ? '#e5e7eb' : meta.border,
+        background: item.purchased ? 'rgba(255,255,255,0.4)' : 'white',
+        border: `2px solid ${item.purchased ? '#e5e7eb' : meta.border}`,
         minHeight: 90,
-        opacity: item.purchased ? 0.55 : 1,
+        opacity: item.purchased ? 0.5 : 1,
+        boxShadow: item.purchased ? 'none' : '0 2px 12px rgba(0,0,0,0.07)',
       }}
       onMouseDown={startHold}
       onMouseUp={endHold}
@@ -61,11 +59,14 @@ export default function ItemBlock({ item, onToggle, onDelete }) {
       onTouchEnd={(e) => { e.preventDefault(); endHold(); }}
       onTouchCancel={cancel}
     >
-      <span className="text-2xl mb-1" style={{ filter: item.purchased ? 'grayscale(1)' : 'none' }}>
+      <span
+        className="text-2xl mb-1"
+        style={{ filter: item.purchased ? 'grayscale(1)' : 'none' }}
+      >
         {meta.emoji}
       </span>
       <span
-        className="text-xs font-semibold leading-tight"
+        className="text-xs font-bold leading-tight"
         style={{
           color: item.purchased ? '#9ca3af' : meta.color,
           textDecoration: item.purchased ? 'line-through' : 'none',

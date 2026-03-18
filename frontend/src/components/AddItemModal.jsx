@@ -9,7 +9,7 @@ export default function AddItemModal({ onAdd, onClose }) {
   const inputRef = useRef(null);
 
   useEffect(() => {
-    inputRef.current?.focus();
+    setTimeout(() => inputRef.current?.focus(), 100);
   }, []);
 
   const handleSubmit = async (e) => {
@@ -23,78 +23,84 @@ export default function AddItemModal({ onAdd, onClose }) {
     }
   };
 
+  const selected = CATEGORIES.find((c) => c.name === category);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Bottom sheet */}
-      <div className="relative w-full bg-white rounded-t-3xl shadow-2xl px-5 pt-5 pb-8 z-10">
-        {/* Handle */}
-        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
+      <div className="sheet-enter relative w-full rounded-t-3xl px-5 pt-4 pb-8 z-10"
+        style={{ background: 'white', boxShadow: '0 -8px 40px rgba(0,0,0,0.18)' }}
+      >
+        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
 
-        <h2 className="text-lg font-bold text-gray-800 mb-4">Adicionar item</h2>
+        <h2 className="text-lg font-extrabold text-gray-800 mb-4">Adicionar item</h2>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+
+          {/* Nome */}
           <div>
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Nome *
-            </label>
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Nome *</label>
             <input
               ref={inputRef}
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="ex: Leite, Pão, Frango..."
-              className="mt-1 w-full border border-gray-200 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-gray-50"
+              className="mt-1 w-full rounded-2xl px-4 py-3 text-base focus:outline-none focus:ring-2 border"
+              style={{ borderColor: selected?.border, background: selected?.bg, focusRingColor: selected?.color }}
             />
           </div>
 
+          {/* Categoria */}
           <div>
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
               Categoria
             </label>
-            <div className="mt-1 grid grid-cols-3 gap-2">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat.name}
-                  type="button"
-                  onClick={() => setCategory(cat.name)}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 text-xs font-semibold transition-all"
-                  style={{
-                    borderColor: category === cat.name ? cat.color : '#e5e7eb',
-                    background: category === cat.name ? cat.bg : 'white',
-                    color: category === cat.name ? cat.color : '#6b7280',
-                  }}
-                >
-                  <span>{cat.emoji}</span>
-                  <span className="truncate">{cat.name.split(' ')[0]}</span>
-                </button>
-              ))}
+            <div className="grid grid-cols-2 gap-2">
+              {CATEGORIES.map((cat) => {
+                const isSelected = category === cat.name;
+                return (
+                  <button
+                    key={cat.name}
+                    type="button"
+                    onClick={() => setCategory(cat.name)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all active:scale-95"
+                    style={{
+                      background: isSelected ? cat.bg : '#f9fafb',
+                      border: `2px solid ${isSelected ? cat.color : '#f3f4f6'}`,
+                      color: isSelected ? cat.color : '#6b7280',
+                      boxShadow: isSelected ? `0 2px 12px ${cat.color}33` : 'none',
+                    }}
+                  >
+                    <span className="text-2xl">{cat.emoji}</span>
+                    <span className="text-xs font-bold leading-tight">{cat.name}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
+          {/* Quantidade */}
           <div>
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Quantidade (opcional)
-            </label>
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Quantidade (opcional)</label>
             <input
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               placeholder="ex: 2 litros, 500g..."
-              className="mt-1 w-full border border-gray-200 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-gray-50"
+              className="mt-1 w-full border border-gray-200 rounded-2xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-gray-50"
             />
           </div>
 
           <button
             type="submit"
             disabled={!name.trim() || submitting}
-            className="w-full py-3.5 rounded-2xl text-white font-bold text-base mt-1 transition-all active:scale-95 disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)' }}
+            className="w-full py-4 rounded-2xl text-white font-extrabold text-base mt-1 active:scale-95 transition-transform disabled:opacity-40"
+            style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 60%, #2563eb 100%)' }}
           >
-            {submitting ? 'Adicionando...' : 'Adicionar'}
+            {submitting ? 'Adicionando...' : '+ Adicionar'}
           </button>
         </form>
       </div>

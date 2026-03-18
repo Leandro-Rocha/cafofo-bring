@@ -65,7 +65,7 @@ function handle(body) {
       const newItem = db.prepare('SELECT * FROM items WHERE id = ?').get(result.lastInsertRowid);
       io?.emit('item:added', newItem);
 
-      return speech(`${item} adicionado à lista.`);
+      return ask(`${capitalized} adicionado. Mais algum item?`, 'Pode falar o próximo item, ou diga é só para terminar.');
     }
 
     if (intentName === 'RemoveItemIntent') {

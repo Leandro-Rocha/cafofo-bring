@@ -52,8 +52,14 @@
           ]
         },
         { "name": "AMAZON.HelpIntent" },
-        { "name": "AMAZON.CancelIntent" },
-        { "name": "AMAZON.StopIntent" },
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": ["é só", "pode fechar", "obrigado", "tchau", "encerrar"]
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": ["é só", "pode fechar", "obrigado", "tchau", "parar"]
+        },
         { "name": "AMAZON.NavigateHomeIntent" }
       ]
     }

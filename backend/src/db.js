@@ -12,10 +12,13 @@ db.exec(`
     name TEXT NOT NULL,
     category TEXT NOT NULL DEFAULT 'Outros',
     quantity TEXT,
+    emoji TEXT,
     purchased INTEGER NOT NULL DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     purchased_at DATETIME
   )
 `);
+
+try { db.exec('ALTER TABLE items ADD COLUMN emoji TEXT'); } catch {}  // migration
 
 module.exports = db;

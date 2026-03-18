@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { CATEGORIES } from '../categories';
+import { detectEmoji } from '../itemEmojis';
 
 export default function AddItemModal({ onAdd, onClose }) {
   const [name, setName] = useState('');
@@ -12,18 +13,24 @@ export default function AddItemModal({ onAdd, onClose }) {
     setTimeout(() => inputRef.current?.focus(), 100);
   }, []);
 
+  const detectedEmoji = detectEmoji(name);
+  const selected = CATEGORIES.find((c) => c.name === category);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim() || submitting) return;
     setSubmitting(true);
     try {
-      await onAdd({ name: name.trim(), category, quantity: quantity.trim() || undefined });
+      await onAdd({
+        name: name.trim(),
+        category,
+        quantity: quantity.trim() || undefined,
+        emoji: detectedEmoji || undefined,
+      });
     } finally {
       setSubmitting(false);
     }
   };
-
-  const selected = CATEGORIES.find((c) => c.name === category);
 
   return (
     <div
@@ -32,33 +39,44 @@ export default function AddItemModal({ onAdd, onClose }) {
     >
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="sheet-enter relative w-full rounded-t-3xl px-5 pt-4 pb-8 z-10"
+      <div
+        className="sheet-enter relative w-full rounded-t-3xl px-5 pt-4 pb-8 z-10"
         style={{ background: 'white', boxShadow: '0 -8px 40px rgba(0,0,0,0.18)' }}
       >
         <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
-
         <h2 className="text-lg font-extrabold text-gray-800 mb-4">Adicionar item</h2>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
-          {/* Nome */}
+          {/* Nome + emoji preview */}
           <div>
             <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Nome *</label>
-            <input
-              ref={inputRef}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="ex: Leite, Pão, Frango..."
-              className="mt-1 w-full rounded-2xl px-4 py-3 text-base focus:outline-none focus:ring-2 border"
-              style={{ borderColor: selected?.border, background: selected?.bg, focusRingColor: selected?.color }}
-            />
+            <div className="flex items-center gap-3 mt-1">
+              <div
+                className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0 transition-all"
+                style={{ background: selected?.bg || '#f3f4f6', border: `2px solid ${selected?.border || '#e5e7eb'}` }}
+              >
+                {detectedEmoji || selected?.emoji || '🛒'}
+              </div>
+              <input
+                ref={inputRef}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="ex: Leite, Pão, Frango..."
+                className="flex-1 rounded-2xl px-4 py-3 text-base focus:outline-none focus:ring-2 border"
+                style={{ borderColor: selected?.border, background: selected?.bg }}
+              />
+            </div>
+            {detectedEmoji && (
+              <p className="text-xs text-gray-400 mt-1 pl-1">
+                Emoji detectado automaticamente {detectedEmoji}
+              </p>
+            )}
           </div>
 
           {/* Categoria */}
           <div>
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">
-              Categoria
-            </label>
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Categoria</label>
             <div className="grid grid-cols-2 gap-2">
               {CATEGORIES.map((cat) => {
                 const isSelected = category === cat.name;

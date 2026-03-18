@@ -1,4 +1,5 @@
 const db = require('../db');
+const { detectEmoji } = require('../emojiDetection');
 
 let io;
 
@@ -48,9 +49,10 @@ function handle(body) {
       if (!item) return ask('Qual item você quer adicionar?', 'Diga o nome do item.');
 
       const capitalized = item.charAt(0).toUpperCase() + item.slice(1);
+      const emoji = detectEmoji(capitalized);
       const result = db.prepare(
-        'INSERT INTO items (name, category, quantity) VALUES (?, ?, ?)'
-      ).run(capitalized, 'Outros', null);
+        'INSERT INTO items (name, category, quantity, emoji) VALUES (?, ?, ?, ?)'
+      ).run(capitalized, 'Outros', null, emoji);
 
       const newItem = db.prepare('SELECT * FROM items WHERE id = ?').get(result.lastInsertRowid);
       io?.emit('item:added', newItem);

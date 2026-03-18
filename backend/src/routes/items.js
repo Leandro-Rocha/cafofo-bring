@@ -10,15 +10,15 @@ router.get('/', (req, res) => {
 });
 
 router.post('/', (req, res) => {
-  const { name, category = 'Outros', quantity } = req.body;
+  const { name, category = 'Outros', quantity, emoji } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: 'Nome obrigatório' });
 
   const normalized = name.trim();
   const capitalized = normalized.charAt(0).toUpperCase() + normalized.slice(1);
 
   const result = db.prepare(
-    'INSERT INTO items (name, category, quantity) VALUES (?, ?, ?)'
-  ).run(capitalized, category, quantity?.trim() || null);
+    'INSERT INTO items (name, category, quantity, emoji) VALUES (?, ?, ?, ?)'
+  ).run(capitalized, category, quantity?.trim() || null, emoji || null);
 
   const item = db.prepare('SELECT * FROM items WHERE id = ?').get(result.lastInsertRowid);
   req.app.get('io').emit('item:added', item);

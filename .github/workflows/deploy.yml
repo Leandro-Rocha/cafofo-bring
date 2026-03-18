@@ -41,26 +41,9 @@ jobs:
     runs-on: [self-hosted, casaos]
 
     steps:
-      - name: Deploy with docker compose
+      - uses: actions/checkout@v4
+
+      - name: Deploy
         run: |
-          mkdir -p /opt/cafofo-bring
-
-          cat > /opt/cafofo-bring/docker-compose.yml << 'EOF'
-          services:
-            cafofo-bring:
-              image: ghcr.io/leandro-rocha/cafofo-bring:latest
-              container_name: cafofo-bring
-              restart: unless-stopped
-              environment:
-                - PORT=3001
-                - DB_PATH=/data/shopping.db
-              volumes:
-                - cafofo-bring-db:/data
-              ports:
-                - "4001:3001"
-          volumes:
-            cafofo-bring-db:
-          EOF
-
-          docker compose -f /opt/cafofo-bring/docker-compose.yml pull
-          docker compose -f /opt/cafofo-bring/docker-compose.yml up -d --remove-orphans
+          docker compose -f docker-compose.casaos.yml pull
+          docker compose -f docker-compose.casaos.yml up -d --remove-orphans

@@ -9,7 +9,7 @@ services:
     volumes:
       - db-data:/data
     ports:
-      - "3001:3001"
+      - "4001:3001"
 
 volumes:
   db-data:

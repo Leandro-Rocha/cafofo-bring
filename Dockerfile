@@ -1,5 +1,7 @@
 # Stage 1: build frontend
 FROM node:20-alpine AS frontend-builder
+ARG BUILD_SHA=dev
+ENV VITE_BUILD_SHA=$BUILD_SHA
 WORKDIR /app
 COPY frontend/package*.json ./
 RUN npm install

@@ -1,6 +1,9 @@
 import { useRef } from 'react';
 import { getCategoryMeta } from '../categories';
 
+// Module-level flag: survives component unmount caused by list reorder after hold
+let holdJustFired = false;
+
 export default function ItemBlock({ item, onTap, onHold, aisleMeta }) {
   const holdTimer = useRef(null);
   const didHold = useRef(false);
@@ -12,13 +15,16 @@ export default function ItemBlock({ item, onTap, onHold, aisleMeta }) {
     didHold.current = false;
     holdTimer.current = setTimeout(() => {
       didHold.current = true;
+      holdJustFired = true;
       onHold?.(item.id);
     }, 500);
   };
 
   const endHold = () => {
     clearTimeout(holdTimer.current);
-    if (!didHold.current) onTap?.(item.id);
+    const suppressed = holdJustFired;
+    holdJustFired = false;
+    if (!didHold.current && !suppressed) onTap?.(item.id);
   };
 
   const cancel = () => {

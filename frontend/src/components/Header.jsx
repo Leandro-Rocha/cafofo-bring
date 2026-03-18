@@ -42,6 +42,9 @@ export default function Header({ pendingCount, onAddClick, onSettingsClick, onWh
             ? 'Tudo comprado! 🎉'
             : `${pendingCount} ${pendingCount === 1 ? 'item' : 'itens'} na lista`}
         </p>
+        <p className="text-indigo-300 text-[10px] mt-0.5 opacity-70 font-mono">
+          {__BUILD_SHA__}
+        </p>
       </div>
 
       <button

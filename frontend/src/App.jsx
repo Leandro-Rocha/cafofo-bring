@@ -1,23 +1,36 @@
 import { useEffect, useState, useCallback } from 'react';
-import { fetchItems, addItem, toggleItem, deleteItem, clearPurchased, socket } from './api';
+import { fetchItems, addItem, toggleItem, deleteItem, clearPurchased, socket, fetchAisles } from './api';
+import { getCategoryMeta } from './categories';
 import Header from './components/Header';
 import CategorySection from './components/CategorySection';
 import PurchasedSection from './components/PurchasedSection';
 import AddItemModal from './components/AddItemModal';
+import AisleManager from './components/AisleManager';
 
 export default function App() {
   const [items, setItems] = useState([]);
+  const [aisles, setAisles] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [showAisleManager, setShowAisleManager] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const loadAisles = useCallback(async () => {
+    try {
+      const data = await fetchAisles();
+      setAisles(data);
+    } catch {
+      // keep whatever we have
+    }
+  }, []);
 
   const load = useCallback(async () => {
     try {
-      const data = await fetchItems();
-      setItems(data);
+      const [itemsData] = await Promise.all([fetchItems(), loadAisles()]);
+      setItems(itemsData);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadAisles]);
 
   useEffect(() => {
     load();
@@ -39,22 +52,34 @@ export default function App() {
   const pending = items.filter((i) => !i.purchased);
   const purchased = items.filter((i) => i.purchased);
 
-  // Group pending by category
+  // Build an aisle lookup map by name
+  const aisleByName = aisles.reduce((acc, a) => { acc[a.name] = a; return acc; }, {});
+
+  // Group pending by category, filtering out items in hidden aisles
+  const hiddenNames = new Set(aisles.filter((a) => a.hidden).map((a) => a.name));
+
   const grouped = pending.reduce((acc, item) => {
+    if (hiddenNames.has(item.category)) return acc;
     acc[item.category] = acc[item.category] || [];
     acc[item.category].push(item);
     return acc;
   }, {});
 
+  // Sort categories by aisle position (unknown categories go to end)
+  const sortedCategories = Object.keys(grouped).sort((a, b) => {
+    const posA = aisleByName[a]?.position ?? 9999;
+    const posB = aisleByName[b]?.position ?? 9999;
+    return posA - posB;
+  });
+
   const handleToggle = async (id) => {
-    // Optimistic update
     setItems((prev) =>
       prev.map((i) => (i.id === id ? { ...i, purchased: i.purchased ? 0 : 1 } : i))
     );
     try {
       await toggleItem(id);
     } catch {
-      load(); // rollback
+      load();
     }
   };
 
@@ -78,6 +103,7 @@ export default function App() {
       <Header
         pendingCount={pending.length}
         onAddClick={() => setShowModal(true)}
+        onSettingsClick={() => setShowAisleManager(true)}
       />
 
       <main className="max-w-2xl mx-auto px-3 pb-24">
@@ -89,13 +115,14 @@ export default function App() {
           <EmptyState onAddClick={() => setShowModal(true)} />
         ) : (
           <>
-            {Object.entries(grouped).map(([category, categoryItems]) => (
+            {sortedCategories.map((category) => (
               <CategorySection
                 key={category}
                 category={category}
-                items={categoryItems}
+                items={grouped[category]}
                 onToggle={handleToggle}
                 onDelete={handleDelete}
+                aisleMeta={aisleByName[category] || getCategoryMeta(category)}
               />
             ))}
 
@@ -112,7 +139,19 @@ export default function App() {
       </main>
 
       {showModal && (
-        <AddItemModal onAdd={handleAdd} onClose={() => setShowModal(false)} />
+        <AddItemModal
+          onAdd={handleAdd}
+          onClose={() => setShowModal(false)}
+          aisles={aisles.length > 0 ? aisles : null}
+        />
+      )}
+
+      {showAisleManager && (
+        <AisleManager
+          aisles={aisles}
+          onClose={() => setShowAisleManager(false)}
+          onRefresh={loadAisles}
+        />
       )}
     </div>
   );

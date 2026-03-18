@@ -1,11 +1,11 @@
 import { useRef, useState } from 'react';
 import { getCategoryMeta } from '../categories';
 
-export default function ItemBlock({ item, onToggle, onDelete }) {
+export default function ItemBlock({ item, onToggle, onDelete, aisleMeta }) {
   const [holding, setHolding] = useState(false);
   const holdTimer = useRef(null);
   const didHold = useRef(false);
-  const meta = getCategoryMeta(item.category);
+  const meta = aisleMeta || getCategoryMeta(item.category);
   const emoji = item.emoji || meta.emoji;
 
   const startHold = () => {

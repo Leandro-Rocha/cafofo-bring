@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { CATEGORIES } from '../categories';
 import { detectEmoji } from '../itemEmojis';
 
-export default function AddItemModal({ onAdd, onClose }) {
+export default function AddItemModal({ onAdd, onClose, aisles }) {
   const [name, setName] = useState('');
   const [category, setCategory] = useState('Outros');
   const [quantity, setQuantity] = useState('');
@@ -13,8 +13,15 @@ export default function AddItemModal({ onAdd, onClose }) {
     setTimeout(() => inputRef.current?.focus(), 100);
   }, []);
 
+  // Use server aisles if provided, filtering out hidden ones; fall back to hardcoded categories
+  const visibleCategories = aisles
+    ? aisles.filter((a) => !a.hidden)
+    : CATEGORIES;
+
   const detectedEmoji = detectEmoji(name);
-  const selected = CATEGORIES.find((c) => c.name === category);
+  const selected = visibleCategories.find((c) => c.name === category)
+    || visibleCategories[visibleCategories.length - 1]
+    || CATEGORIES[CATEGORIES.length - 1];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -78,7 +85,7 @@ export default function AddItemModal({ onAdd, onClose }) {
           <div>
             <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Categoria</label>
             <div className="grid grid-cols-2 gap-2">
-              {CATEGORIES.map((cat) => {
+              {visibleCategories.map((cat) => {
                 const isSelected = category === cat.name;
                 return (
                   <button

@@ -1,4 +1,4 @@
-export default function Header({ pendingCount, onAddClick }) {
+export default function Header({ pendingCount, onAddClick, onSettingsClick }) {
   return (
     <header
       className="sticky top-0 z-10 px-4 py-4 flex items-center justify-between"
@@ -7,7 +7,16 @@ export default function Header({ pendingCount, onAddClick }) {
         boxShadow: '0 4px 24px rgba(99,102,241,0.35)',
       }}
     >
-      <div>
+      <button
+        onClick={onSettingsClick}
+        aria-label="Gerenciar corredores"
+        className="w-10 h-10 rounded-full flex items-center justify-center text-xl shadow active:scale-90 transition-transform"
+        style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', color: 'white', border: '1.5px solid rgba(255,255,255,0.3)' }}
+      >
+        ⚙️
+      </button>
+
+      <div className="text-center flex-1 mx-2">
         <h1 className="text-white text-xl font-bold tracking-tight drop-shadow">
           🛒 Cafofo Bring
         </h1>
@@ -17,6 +26,7 @@ export default function Header({ pendingCount, onAddClick }) {
             : `${pendingCount} ${pendingCount === 1 ? 'item' : 'itens'} na lista`}
         </p>
       </div>
+
       <button
         onClick={onAddClick}
         aria-label="Adicionar item"

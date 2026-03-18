@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { fetchItems, addItem, toggleItem, deleteItem, clearPurchased, socket, fetchAisles, changeItemCategory } from './api';
+import { fetchItems, addItem, toggleItem, deleteItem, clearPurchased, socket, fetchAisles, changeItemCategory, fetchWaStatus } from './api';
 import { getCategoryMeta } from './categories';
 import Header from './components/Header';
 import CategorySection from './components/CategorySection';
@@ -7,12 +7,15 @@ import PurchasedSection from './components/PurchasedSection';
 import AddItemModal from './components/AddItemModal';
 import AisleManager from './components/AisleManager';
 import ItemActionSheet from './components/ItemActionSheet';
+import WhatsAppSetup from './components/WhatsAppSetup';
 
 export default function App() {
   const [items, setItems] = useState([]);
   const [aisles, setAisles] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [showAisleManager, setShowAisleManager] = useState(false);
+  const [showWhatsApp, setShowWhatsApp] = useState(false);
+  const [waStatus, setWaStatus] = useState('disconnected');
   const [loading, setLoading] = useState(true);
   const [heldItem, setHeldItem] = useState(null);
 
@@ -33,6 +36,10 @@ export default function App() {
       setLoading(false);
     }
   }, [loadAisles]);
+
+  useEffect(() => {
+    fetchWaStatus().then((s) => setWaStatus(s.status)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     load();
@@ -120,6 +127,8 @@ export default function App() {
         pendingCount={pending.length}
         onAddClick={() => setShowModal(true)}
         onSettingsClick={() => setShowAisleManager(true)}
+        onWhatsAppClick={() => setShowWhatsApp(true)}
+        waStatus={waStatus}
       />
 
       <main className="max-w-2xl mx-auto px-3 pb-24">
@@ -162,6 +171,10 @@ export default function App() {
           onClose={() => setShowModal(false)}
           aisles={aisles.length > 0 ? aisles : null}
         />
+      )}
+
+      {showWhatsApp && (
+        <WhatsAppSetup onClose={() => { setShowWhatsApp(false); fetchWaStatus().then((s) => setWaStatus(s.status)).catch(() => {}); }} />
       )}
 
       {showAisleManager && (

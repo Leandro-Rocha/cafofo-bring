@@ -5,6 +5,8 @@ const cors = require('cors');
 const itemsRouter = require('./routes/items');
 
 require('./db'); // init database
+const wa = require('./whatsapp');
+wa.connect().catch((err) => console.error('[whatsapp] falha ao conectar:', err.message));
 
 const app = express();
 const server = http.createServer(app);
@@ -27,6 +29,7 @@ app.set('io', io);
 
 app.use('/api/items', itemsRouter);
 app.use('/api/aisles', require('./routes/aisles'));
+app.use('/api/whatsapp', require('./routes/whatsapp'));
 app.get('/health', (_, res) => res.json({ ok: true }));
 
 // Serve frontend static files if present (production)

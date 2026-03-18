@@ -1,5 +1,6 @@
 const db = require('../db');
 const { detectEmoji } = require('../emojiDetection');
+const wa = require('../whatsapp');
 
 function normalizeName(name) {
   return name.toLowerCase().trim();
@@ -72,6 +73,7 @@ function handle(body) {
           emoji = excluded.emoji,
           last_added_at = CURRENT_TIMESTAMP
       `).run(normalizeName(capitalized), capitalized, newItem.emoji || null);
+      wa.queueEvent('added', capitalized, 'Alexa');
       io?.emit('item:added', newItem);
 
       return ask(`${capitalized} adicionado. Mais algum item?`, 'Pode falar o próximo item, ou diga é só para terminar.');
@@ -88,6 +90,7 @@ function handle(body) {
       if (!found) return speech(`Não encontrei ${item} na lista.`);
 
       db.prepare('DELETE FROM items WHERE id = ?').run(found.id);
+      wa.queueEvent('removed', found.name, 'Alexa');
       io?.emit('item:deleted', { id: found.id });
 
       return speech(`${found.name} removido da lista.`);

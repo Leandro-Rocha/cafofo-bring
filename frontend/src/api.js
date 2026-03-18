@@ -51,6 +51,37 @@ export async function fetchFrequent(limit = 12) {
   return res.json();
 }
 
+// WhatsApp API
+export async function fetchWaStatus() {
+  const res = await fetch('/api/whatsapp/status');
+  return res.json();
+}
+
+export async function fetchWaGroups() {
+  const res = await fetch('/api/whatsapp/groups');
+  return res.json();
+}
+
+export async function setWaGroup(groupId, groupName) {
+  await fetch('/api/whatsapp/group', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ groupId, groupName }),
+  });
+}
+
+export async function setWaInterval(minutes) {
+  await fetch('/api/whatsapp/interval', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ minutes }),
+  });
+}
+
+export async function disconnectWa() {
+  await fetch('/api/whatsapp/disconnect', { method: 'POST' });
+}
+
 // Aisles API
 export async function fetchAisles() {
   const res = await fetch(AISLES_BASE);

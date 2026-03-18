@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const wa = require('../whatsapp');
 
 function normalizeName(name) {
   return name.toLowerCase().trim();
@@ -60,6 +61,7 @@ router.post('/', (req, res) => {
 
   const item = db.prepare('SELECT * FROM items WHERE id = ?').get(result.lastInsertRowid);
   upsertHistory(db, normalizeName(capitalized), capitalized, item.emoji);
+  wa.queueEvent('added', capitalized, 'App');
   req.app.get('io').emit('item:added', item);
   res.status(201).json(item);
 });
@@ -93,6 +95,8 @@ router.patch('/:id/toggle', (req, res) => {
   db.prepare('UPDATE items SET purchased = ?, purchased_at = ? WHERE id = ?')
     .run(purchased, purchased_at, req.params.id);
 
+  if (purchased) wa.queueEvent('purchased', item.name, null);
+
   const updated = db.prepare('SELECT * FROM items WHERE id = ?').get(req.params.id);
   req.app.get('io').emit('item:updated', updated);
   res.json(updated);
@@ -100,12 +104,15 @@ router.patch('/:id/toggle', (req, res) => {
 
 router.delete('/purchased/clear', (req, res) => {
   db.prepare('DELETE FROM items WHERE purchased = 1').run();
+  wa.queueEvent('cleared', null, null);
   req.app.get('io').emit('purchased:cleared');
   res.status(204).end();
 });
 
 router.delete('/:id', (req, res) => {
+  const item = db.prepare('SELECT * FROM items WHERE id = ?').get(req.params.id);
   db.prepare('DELETE FROM items WHERE id = ?').run(req.params.id);
+  if (item) wa.queueEvent('removed', item.name, 'App');
   req.app.get('io').emit('item:deleted', { id: parseInt(req.params.id) });
   res.status(204).end();
 });

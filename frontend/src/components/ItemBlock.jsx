@@ -21,13 +21,18 @@ export default function ItemBlock({ item, onTap, onHold, aisleMeta }) {
     }, 500);
   };
 
-  // Cancel hold if finger moves (user is scrolling)
+  // Movement only cancels the hold timer — does NOT prevent the tap.
+  // pointerCancel (browser scroll takeover) is what prevents the tap.
   const moveHold = (e) => {
+    if (didHold.current) return;
     const dx = e.clientX - startPos.current.x;
     const dy = e.clientY - startPos.current.y;
-    if (Math.sqrt(dx * dx + dy * dy) > 8) cancel();
+    if (Math.sqrt(dx * dx + dy * dy) > 12) {
+      clearTimeout(holdTimer.current);
+    }
   };
 
+  // pointerUp = finger lifted intentionally → fire tap if no hold
   const endHold = () => {
     clearTimeout(holdTimer.current);
     const suppressed = holdJustFired;
@@ -35,6 +40,7 @@ export default function ItemBlock({ item, onTap, onHold, aisleMeta }) {
     if (!didHold.current && !suppressed) onTap?.(item.id);
   };
 
+  // pointerCancel = browser took over (scroll) → no tap, no hold
   const cancel = () => {
     clearTimeout(holdTimer.current);
     didHold.current = false;
@@ -49,6 +55,7 @@ export default function ItemBlock({ item, onTap, onHold, aisleMeta }) {
         minHeight: 100,
         opacity: item.purchased ? 0.5 : 1,
         boxShadow: item.purchased ? 'none' : '0 2px 16px rgba(0,0,0,0.07)',
+        touchAction: 'pan-y',
       }}
       onPointerDown={startHold}
       onPointerMove={moveHold}

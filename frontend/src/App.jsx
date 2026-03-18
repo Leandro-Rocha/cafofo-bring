@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react';
-import { fetchItems, addItem, toggleItem, deleteItem, clearPurchased, socket, fetchAisles } from './api';
+import { fetchItems, addItem, toggleItem, deleteItem, clearPurchased, socket, fetchAisles, changeItemCategory } from './api';
 import { getCategoryMeta } from './categories';
 import Header from './components/Header';
 import CategorySection from './components/CategorySection';
 import PurchasedSection from './components/PurchasedSection';
 import AddItemModal from './components/AddItemModal';
 import AisleManager from './components/AisleManager';
+import ItemActionSheet from './components/ItemActionSheet';
 
 export default function App() {
   const [items, setItems] = useState([]);
@@ -13,6 +14,7 @@ export default function App() {
   const [showModal, setShowModal] = useState(false);
   const [showAisleManager, setShowAisleManager] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [heldItem, setHeldItem] = useState(null);
 
   const loadAisles = useCallback(async () => {
     try {
@@ -88,6 +90,20 @@ export default function App() {
     await deleteItem(id);
   };
 
+  const handleHold = (id) => {
+    setHeldItem(items.find((i) => i.id === id) || null);
+  };
+
+  const handleMove = async (id, category) => {
+    setHeldItem(null);
+    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, category } : i)));
+    try {
+      await changeItemCategory(id, category);
+    } catch {
+      load();
+    }
+  };
+
   const handleAdd = async (data) => {
     await addItem(data);
     setShowModal(false);
@@ -122,6 +138,7 @@ export default function App() {
                 items={grouped[category]}
                 onToggle={handleToggle}
                 onDelete={handleDelete}
+                onHold={handleHold}
                 aisleMeta={aisleByName[category] || getCategoryMeta(category)}
               />
             ))}
@@ -131,6 +148,7 @@ export default function App() {
                 items={purchased}
                 onToggle={handleToggle}
                 onDelete={handleDelete}
+                onHold={handleHold}
                 onClear={handleClearPurchased}
               />
             )}
@@ -151,6 +169,16 @@ export default function App() {
           aisles={aisles}
           onClose={() => setShowAisleManager(false)}
           onRefresh={loadAisles}
+        />
+      )}
+
+      {heldItem && (
+        <ItemActionSheet
+          item={heldItem}
+          aisles={aisles}
+          onMove={handleMove}
+          onDelete={(id) => { handleDelete(id); setHeldItem(null); }}
+          onClose={() => setHeldItem(null)}
         />
       )}
     </div>

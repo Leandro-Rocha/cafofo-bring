@@ -1,8 +1,7 @@
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { getCategoryMeta } from '../categories';
 
-export default function ItemBlock({ item, onToggle, onDelete, aisleMeta }) {
-  const [holding, setHolding] = useState(false);
+export default function ItemBlock({ item, onToggle, onHold, aisleMeta }) {
   const holdTimer = useRef(null);
   const didHold = useRef(false);
   const meta = aisleMeta || getCategoryMeta(item.category);
@@ -12,7 +11,7 @@ export default function ItemBlock({ item, onToggle, onDelete, aisleMeta }) {
     didHold.current = false;
     holdTimer.current = setTimeout(() => {
       didHold.current = true;
-      setHolding(true);
+      onHold?.(item.id);
     }, 500);
   };
 
@@ -25,23 +24,6 @@ export default function ItemBlock({ item, onToggle, onDelete, aisleMeta }) {
     clearTimeout(holdTimer.current);
     didHold.current = false;
   };
-
-  if (holding) {
-    return (
-      <div
-        className="item-card item-enter relative rounded-2xl flex flex-col items-center justify-center text-center cursor-pointer select-none"
-        style={{ background: '#fef2f2', border: '2px solid #fca5a5', minHeight: 100 }}
-        onClick={() => setHolding(false)}
-      >
-        <button
-          className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-red-100 text-red-400 text-xs flex items-center justify-center"
-          onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
-        >✕</button>
-        <span className="text-3xl mb-1">🗑️</span>
-        <span className="text-xs text-red-400 font-bold">Remover?</span>
-      </div>
-    );
-  }
 
   return (
     <div

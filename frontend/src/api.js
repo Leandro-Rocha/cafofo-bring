@@ -35,6 +35,16 @@ export async function clearPurchased() {
   await fetch(`${BASE}/purchased/clear`, { method: 'DELETE' });
 }
 
+export async function changeItemCategory(id, category) {
+  const res = await fetch(`${BASE}/${id}/category`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ category }),
+  });
+  if (!res.ok) throw new Error('Erro ao mover item');
+  return res.json();
+}
+
 // Aisles API
 export async function fetchAisles() {
   const res = await fetch(AISLES_BASE);

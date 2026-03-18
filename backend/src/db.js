@@ -34,6 +34,13 @@ db.exec(`
   )
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS item_defaults (
+    name_normalized TEXT PRIMARY KEY,
+    category TEXT NOT NULL
+  )
+`);
+
 // Seed aisles if table is empty
 const aisleCount = db.prepare('SELECT COUNT(*) as cnt FROM aisles').get();
 if (aisleCount.cnt === 0) {

@@ -1,6 +1,10 @@
 const db = require('../db');
 const { detectEmoji } = require('../emojiDetection');
 
+function normalizeName(name) {
+  return name.toLowerCase().trim();
+}
+
 let io;
 
 function speech(text) {
@@ -50,9 +54,13 @@ function handle(body) {
 
       const capitalized = item.charAt(0).toUpperCase() + item.slice(1);
       const emoji = detectEmoji(capitalized);
+      const remembered = db.prepare(
+        'SELECT category FROM item_defaults WHERE name_normalized = ?'
+      ).get(normalizeName(capitalized));
+      const category = remembered?.category || 'Outros';
       const result = db.prepare(
         'INSERT INTO items (name, category, quantity, emoji) VALUES (?, ?, ?, ?)'
-      ).run(capitalized, 'Outros', null, emoji);
+      ).run(capitalized, category, null, emoji);
 
       const newItem = db.prepare('SELECT * FROM items WHERE id = ?').get(result.lastInsertRowid);
       io?.emit('item:added', newItem);

@@ -63,6 +63,15 @@ function handle(body) {
       ).run(capitalized, category, null, emoji);
 
       const newItem = db.prepare('SELECT * FROM items WHERE id = ?').get(result.lastInsertRowid);
+      db.prepare(`
+        INSERT INTO item_history (name_normalized, display_name, emoji, count, last_added_at)
+        VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP)
+        ON CONFLICT(name_normalized) DO UPDATE SET
+          count = count + 1,
+          display_name = excluded.display_name,
+          emoji = excluded.emoji,
+          last_added_at = CURRENT_TIMESTAMP
+      `).run(normalizeName(capitalized), capitalized, newItem.emoji || null);
       io?.emit('item:added', newItem);
 
       return ask(`${capitalized} adicionado. Mais algum item?`, 'Pode falar o próximo item, ou diga é só para terminar.');

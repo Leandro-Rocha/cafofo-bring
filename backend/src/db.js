@@ -41,6 +41,16 @@ db.exec(`
   )
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS item_history (
+    name_normalized TEXT PRIMARY KEY,
+    display_name TEXT NOT NULL,
+    emoji TEXT,
+    count INTEGER NOT NULL DEFAULT 1,
+    last_added_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+
 // Seed aisles if table is empty
 const aisleCount = db.prepare('SELECT COUNT(*) as cnt FROM aisles').get();
 if (aisleCount.cnt === 0) {

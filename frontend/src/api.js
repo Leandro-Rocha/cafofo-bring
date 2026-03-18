@@ -45,6 +45,12 @@ export async function changeItemCategory(id, category) {
   return res.json();
 }
 
+export async function fetchFrequent(limit = 12) {
+  const res = await fetch(`${BASE}/frequent?limit=${limit}`);
+  if (!res.ok) throw new Error('Erro ao carregar frequentes');
+  return res.json();
+}
+
 // Aisles API
 export async function fetchAisles() {
   const res = await fetch(AISLES_BASE);

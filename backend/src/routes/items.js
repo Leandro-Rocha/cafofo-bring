@@ -6,6 +6,26 @@ function normalizeName(name) {
   return name.toLowerCase().trim();
 }
 
+function upsertHistory(db, nameNormalized, displayName, emoji) {
+  db.prepare(`
+    INSERT INTO item_history (name_normalized, display_name, emoji, count, last_added_at)
+    VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP)
+    ON CONFLICT(name_normalized) DO UPDATE SET
+      count = count + 1,
+      display_name = excluded.display_name,
+      emoji = excluded.emoji,
+      last_added_at = CURRENT_TIMESTAMP
+  `).run(nameNormalized, displayName, emoji || null);
+}
+
+router.get('/frequent', (req, res) => {
+  const limit = parseInt(req.query.limit) || 12;
+  const items = db.prepare(
+    'SELECT display_name as name, emoji FROM item_history ORDER BY count DESC, last_added_at DESC LIMIT ?'
+  ).all(limit);
+  res.json(items);
+});
+
 router.get('/', (req, res) => {
   const items = db.prepare(
     'SELECT * FROM items ORDER BY purchased ASC, category ASC, created_at ASC'
@@ -39,6 +59,7 @@ router.post('/', (req, res) => {
   ).run(capitalized, resolvedCategory, quantity?.trim() || null, emoji || null);
 
   const item = db.prepare('SELECT * FROM items WHERE id = ?').get(result.lastInsertRowid);
+  upsertHistory(db, normalizeName(capitalized), capitalized, item.emoji);
   req.app.get('io').emit('item:added', item);
   res.status(201).json(item);
 });

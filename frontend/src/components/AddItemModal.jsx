@@ -1,16 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
 import { CATEGORIES } from '../categories';
 import { detectEmoji } from '../itemEmojis';
+import { fetchFrequent } from '../api';
 
 export default function AddItemModal({ onAdd, onClose, aisles }) {
   const [name, setName] = useState('');
   const [category, setCategory] = useState('Outros');
   const [quantity, setQuantity] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [frequent, setFrequent] = useState([]);
   const inputRef = useRef(null);
 
   useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 100);
+    fetchFrequent(16).then(setFrequent).catch(() => {});
   }, []);
 
   // Use server aisles if provided, filtering out hidden ones; fall back to hardcoded categories
@@ -39,6 +42,16 @@ export default function AddItemModal({ onAdd, onClose, aisles }) {
     }
   };
 
+  const handleQuickAdd = async (item) => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      await onAdd({ name: item.name, emoji: item.emoji || undefined });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end"
@@ -51,7 +64,27 @@ export default function AddItemModal({ onAdd, onClose, aisles }) {
         style={{ background: 'white', boxShadow: '0 -8px 40px rgba(0,0,0,0.18)' }}
       >
         <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
-        <h2 className="text-lg font-extrabold text-gray-800 mb-4">Adicionar item</h2>
+        <h2 className="text-lg font-extrabold text-gray-800 mb-3">Adicionar item</h2>
+
+        {frequent.length > 0 && (
+          <div className="mb-3">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Frequentes</p>
+            <div className="flex flex-wrap gap-2">
+              {frequent.map((item) => (
+                <button
+                  key={item.name}
+                  type="button"
+                  onClick={() => handleQuickAdd(item)}
+                  disabled={submitting}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100 active:scale-95 transition-transform disabled:opacity-40"
+                >
+                  {item.emoji && <span>{item.emoji}</span>}
+                  {item.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 

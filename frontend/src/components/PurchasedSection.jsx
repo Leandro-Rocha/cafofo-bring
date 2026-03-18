@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import ItemBlock from './ItemBlock';
 
-export default function PurchasedSection({ items, onToggle, onDelete, onHold, onClear }) {
+export default function PurchasedSection({ items, onTap, onHold, onClear }) {
   const [expanded, setExpanded] = useState(true);
 
   return (
@@ -32,7 +32,7 @@ export default function PurchasedSection({ items, onToggle, onDelete, onHold, on
       {expanded && (
         <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
           {items.map((item) => (
-            <ItemBlock key={item.id} item={item} onToggle={onToggle} onHold={onHold} />
+            <ItemBlock key={item.id} item={item} onTap={onTap} onHold={onHold} />
           ))}
         </div>
       )}

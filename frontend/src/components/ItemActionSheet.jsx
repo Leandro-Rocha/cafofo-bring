@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { getCategoryMeta } from '../categories';
 
-export default function ItemActionSheet({ item, aisles, onMove, onDelete, onClose }) {
+export default function ItemActionSheet({ item, aisles, onMove, onDelete, onToggle, onRename, onClose }) {
+  const [editing, setEditing] = useState(false);
+  const [nameVal, setNameVal] = useState(item.name);
   const visibleAisles = aisles ? aisles.filter((a) => !a.hidden) : [];
 
   const handleMove = (aisleName) => {
@@ -13,6 +16,22 @@ export default function ItemActionSheet({ item, aisles, onMove, onDelete, onClos
     onClose();
   };
 
+  const handleToggle = () => {
+    onToggle(item.id);
+    onClose();
+  };
+
+  const handleRename = () => {
+    const trimmed = nameVal.trim();
+    if (trimmed && trimmed !== item.name) onRename(item.id, trimmed);
+    onClose();
+  };
+
+  const cancelEdit = () => {
+    setEditing(false);
+    setNameVal(item.name);
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end"
@@ -21,54 +40,108 @@ export default function ItemActionSheet({ item, aisles, onMove, onDelete, onClos
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
       <div
-        className="sheet-enter relative w-full rounded-t-3xl px-5 pt-4 pb-8 z-10"
-        style={{ background: 'white', boxShadow: '0 -8px 40px rgba(0,0,0,0.18)' }}
+        className="sheet-enter relative w-full rounded-t-3xl px-5 pt-4 pb-10 z-10"
+        style={{ background: 'white', boxShadow: '0 -8px 40px rgba(0,0,0,0.18)', maxHeight: '88vh', overflowY: 'auto' }}
       >
         <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
 
-        <h2 className="text-lg font-extrabold text-gray-800 mb-1">
-          Mover <span className="text-indigo-600">{item.name}</span>
-        </h2>
-        <p className="text-xs text-gray-400 uppercase tracking-widest font-bold mb-4">
-          Selecione o corredor
-        </p>
-
-        <div className="grid grid-cols-2 gap-2 mb-5">
-          {visibleAisles.map((aisle) => {
-            const isSelected = item.category === aisle.name;
-            const meta = aisle.color
-              ? aisle
-              : getCategoryMeta(aisle.name);
-            return (
-              <button
-                key={aisle.name}
-                type="button"
-                onClick={() => handleMove(aisle.name)}
-                className="flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all active:scale-95"
-                style={{
-                  background: isSelected ? meta.bg : '#f9fafb',
-                  border: `2px solid ${isSelected ? meta.color : '#f3f4f6'}`,
-                  color: isSelected ? meta.color : '#6b7280',
-                  boxShadow: isSelected ? `0 2px 12px ${meta.color}33` : 'none',
-                }}
-              >
-                <span className="text-2xl">{meta.emoji}</span>
-                <span className="text-xs font-bold leading-tight">{aisle.name}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="border-t border-gray-100 pt-4">
+        {/* Header with inline edit */}
+        <div className="flex items-center gap-3 mb-5">
+          <span className="text-4xl leading-none">{item.emoji || '🛒'}</span>
+          {editing ? (
+            <input
+              autoFocus
+              value={nameVal}
+              onChange={(e) => setNameVal(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleRename()}
+              className="flex-1 text-lg font-extrabold text-gray-800 border-b-2 border-indigo-400 outline-none bg-transparent pb-0.5"
+            />
+          ) : (
+            <h2 className="flex-1 text-lg font-extrabold text-gray-800 leading-tight">{item.name}</h2>
+          )}
           <button
-            type="button"
-            onClick={handleDelete}
-            className="w-full py-3.5 rounded-2xl font-extrabold text-sm active:scale-95 transition-transform"
-            style={{ background: '#fef2f2', color: '#ef4444', border: '2px solid #fca5a5' }}
+            onClick={() => editing ? cancelEdit() : setEditing(true)}
+            className="text-xl px-2.5 py-1.5 rounded-xl active:scale-90 transition-transform"
+            style={{ background: editing ? '#eef2ff' : '#f3f4f6', color: editing ? '#4f46e5' : '#9ca3af' }}
           >
-            🗑️ Remover item
+            {editing ? '✕' : '✏️'}
           </button>
         </div>
+
+        {editing ? (
+          /* Edit mode */
+          <div className="flex gap-2">
+            <button
+              onClick={cancelEdit}
+              className="flex-1 py-3.5 rounded-2xl font-extrabold text-sm text-gray-500 bg-gray-100 active:scale-95 transition-transform"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleRename}
+              disabled={!nameVal.trim()}
+              className="flex-1 py-3.5 rounded-2xl font-extrabold text-sm text-white active:scale-95 transition-transform disabled:opacity-40"
+              style={{ background: 'linear-gradient(135deg, #7c3aed, #2563eb)' }}
+            >
+              Salvar
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Toggle purchased */}
+            <button
+              type="button"
+              onClick={handleToggle}
+              className="w-full py-3.5 rounded-2xl font-extrabold text-sm active:scale-95 transition-transform mb-4"
+              style={item.purchased
+                ? { background: '#f9fafb', color: '#6b7280', border: '2px solid #e5e7eb' }
+                : { background: '#f0fdf4', color: '#16a34a', border: '2px solid #86efac' }
+              }
+            >
+              {item.purchased ? '↩️ Desmarcar' : '✅ Marcar como comprado'}
+            </button>
+
+            {/* Aisle grid — only for pending items */}
+            {!item.purchased && visibleAisles.length > 0 && (
+              <>
+                <p className="text-xs text-gray-400 uppercase tracking-widest font-bold mb-2">Mover para corredor</p>
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  {visibleAisles.map((aisle) => {
+                    const isSelected = item.category === aisle.name;
+                    const meta = aisle.color ? aisle : getCategoryMeta(aisle.name);
+                    return (
+                      <button
+                        key={aisle.name}
+                        type="button"
+                        onClick={() => handleMove(aisle.name)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all active:scale-95"
+                        style={{
+                          background: isSelected ? meta.bg : '#f9fafb',
+                          border: `2px solid ${isSelected ? meta.color : '#f3f4f6'}`,
+                          color: isSelected ? meta.color : '#6b7280',
+                          boxShadow: isSelected ? `0 2px 12px ${meta.color}33` : 'none',
+                        }}
+                      >
+                        <span className="text-2xl">{meta.emoji}</span>
+                        <span className="text-xs font-bold leading-tight">{aisle.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
+            {/* Delete */}
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="w-full py-3.5 rounded-2xl font-extrabold text-sm active:scale-95 transition-transform"
+              style={{ background: '#fef2f2', color: '#ef4444', border: '2px solid #fca5a5' }}
+            >
+              🗑️ Remover item
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

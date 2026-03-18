@@ -66,6 +66,25 @@ router.post('/', (req, res) => {
   res.status(201).json(item);
 });
 
+router.patch('/:id/name', (req, res) => {
+  const { name } = req.body;
+  if (!name?.trim()) return res.status(400).json({ error: 'Nome obrigatório' });
+
+  const item = db.prepare('SELECT * FROM items WHERE id = ?').get(req.params.id);
+  if (!item) return res.status(404).json({ error: 'Item não encontrado' });
+
+  const capitalized = name.trim().charAt(0).toUpperCase() + name.trim().slice(1);
+  db.prepare('UPDATE items SET name = ? WHERE id = ?').run(capitalized, req.params.id);
+
+  // Keep history display_name in sync
+  db.prepare('UPDATE item_history SET display_name = ? WHERE name_normalized = ?')
+    .run(capitalized, normalizeName(item.name));
+
+  const updated = db.prepare('SELECT * FROM items WHERE id = ?').get(req.params.id);
+  req.app.get('io').emit('item:updated', updated);
+  res.json(updated);
+});
+
 router.patch('/:id/category', (req, res) => {
   const { category } = req.body;
   if (!category) return res.status(400).json({ error: 'Categoria obrigatória' });

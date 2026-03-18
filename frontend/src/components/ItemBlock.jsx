@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { getCategoryMeta } from '../categories';
 
-export default function ItemBlock({ item, onToggle, onHold, aisleMeta }) {
+export default function ItemBlock({ item, onTap, onHold, aisleMeta }) {
   const holdTimer = useRef(null);
   const didHold = useRef(false);
   const meta = aisleMeta || getCategoryMeta(item.category);
@@ -17,7 +17,7 @@ export default function ItemBlock({ item, onToggle, onHold, aisleMeta }) {
 
   const endHold = () => {
     clearTimeout(holdTimer.current);
-    if (!didHold.current) onToggle(item.id);
+    if (!didHold.current) onTap?.(item.id);
   };
 
   const cancel = () => {

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { fetchItems, addItem, toggleItem, deleteItem, clearPurchased, socket, fetchAisles, changeItemCategory, fetchWaStatus } from './api';
+import { fetchItems, addItem, toggleItem, deleteItem, clearPurchased, socket, fetchAisles, changeItemCategory, renameItem, fetchWaStatus } from './api';
 import { getCategoryMeta } from './categories';
 import Header from './components/Header';
 import CategorySection from './components/CategorySection';
@@ -97,8 +97,23 @@ export default function App() {
     await deleteItem(id);
   };
 
-  const handleHold = (id) => {
+  // Tap → open action sheet
+  const handleTap = (id) => {
     setHeldItem(items.find((i) => i.id === id) || null);
+  };
+
+  // Hold → quick purchase toggle
+  const handleHold = (id) => {
+    handleToggle(id);
+  };
+
+  const handleRename = async (id, name) => {
+    try {
+      const updated = await renameItem(id, name);
+      setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
+    } catch {
+      load();
+    }
   };
 
   const handleMove = async (id, category) => {
@@ -145,8 +160,7 @@ export default function App() {
                 key={category}
                 category={category}
                 items={grouped[category]}
-                onToggle={handleToggle}
-                onDelete={handleDelete}
+                onTap={handleTap}
                 onHold={handleHold}
                 aisleMeta={aisleByName[category] || getCategoryMeta(category)}
               />
@@ -155,8 +169,7 @@ export default function App() {
             {purchased.length > 0 && (
               <PurchasedSection
                 items={purchased}
-                onToggle={handleToggle}
-                onDelete={handleDelete}
+                onTap={handleTap}
                 onHold={handleHold}
                 onClear={handleClearPurchased}
               />
@@ -190,7 +203,9 @@ export default function App() {
           item={heldItem}
           aisles={aisles}
           onMove={handleMove}
+          onToggle={(id) => { handleToggle(id); setHeldItem(null); }}
           onDelete={(id) => { handleDelete(id); setHeldItem(null); }}
+          onRename={(id, name) => { handleRename(id, name); setHeldItem(null); }}
           onClose={() => setHeldItem(null)}
         />
       )}

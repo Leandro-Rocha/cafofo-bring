@@ -1,7 +1,7 @@
 import { getCategoryMeta } from '../categories';
 import ItemBlock from './ItemBlock';
 
-export default function CategorySection({ category, items, onToggle, onDelete, onHold, aisleMeta }) {
+export default function CategorySection({ category, items, onTap, onHold, aisleMeta }) {
   const meta = aisleMeta || getCategoryMeta(category);
 
   return (
@@ -23,7 +23,7 @@ export default function CategorySection({ category, items, onToggle, onDelete, o
       </div>
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
         {items.map((item) => (
-          <ItemBlock key={item.id} item={item} onToggle={onToggle} onHold={onHold} aisleMeta={meta} />
+          <ItemBlock key={item.id} item={item} onTap={onTap} onHold={onHold} aisleMeta={meta} />
         ))}
       </div>
     </section>

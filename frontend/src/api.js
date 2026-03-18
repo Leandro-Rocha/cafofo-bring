@@ -35,6 +35,16 @@ export async function clearPurchased() {
   await fetch(`${BASE}/purchased/clear`, { method: 'DELETE' });
 }
 
+export async function renameItem(id, name) {
+  const res = await fetch(`${BASE}/${id}/name`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+  if (!res.ok) throw new Error('Erro ao renomear item');
+  return res.json();
+}
+
 export async function changeItemCategory(id, category) {
   const res = await fetch(`${BASE}/${id}/category`, {
     method: 'PATCH',

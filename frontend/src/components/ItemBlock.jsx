@@ -7,7 +7,8 @@ export default function ItemBlock({ item, onTap, onHold, aisleMeta }) {
   const meta = aisleMeta || getCategoryMeta(item.category);
   const emoji = item.emoji || meta.emoji;
 
-  const startHold = () => {
+  const startHold = (e) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
     didHold.current = false;
     holdTimer.current = setTimeout(() => {
       didHold.current = true;
@@ -34,13 +35,11 @@ export default function ItemBlock({ item, onTap, onHold, aisleMeta }) {
         minHeight: 100,
         opacity: item.purchased ? 0.5 : 1,
         boxShadow: item.purchased ? 'none' : '0 2px 16px rgba(0,0,0,0.07)',
+        touchAction: 'none',
       }}
-      onMouseDown={startHold}
-      onMouseUp={endHold}
-      onMouseLeave={cancel}
-      onTouchStart={(e) => { e.preventDefault(); startHold(); }}
-      onTouchEnd={(e) => { e.preventDefault(); endHold(); }}
-      onTouchCancel={cancel}
+      onPointerDown={startHold}
+      onPointerUp={endHold}
+      onPointerCancel={cancel}
     >
       {/* Color accent bar */}
       {!item.purchased && (

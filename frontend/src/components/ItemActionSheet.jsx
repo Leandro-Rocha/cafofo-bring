@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { getCategoryMeta } from '../categories';
 
 export default function ItemActionSheet({ item, aisles, onMove, onDelete, onToggle, onRename, onClose }) {
   const [editing, setEditing] = useState(false);
+  const mountedAt = useRef(Date.now());
+  const safeClose = () => { if (Date.now() - mountedAt.current > 200) onClose(); };
   const [nameVal, setNameVal] = useState(item.name);
   const [quantityVal, setQuantityVal] = useState(item.quantity || '');
   const visibleAisles = aisles ? aisles.filter((a) => !a.hidden) : [];
@@ -37,9 +39,9 @@ export default function ItemActionSheet({ item, aisles, onMove, onDelete, onTogg
   return (
     <div
       className="fixed inset-0 z-50 flex items-end"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+      onClick={(e) => e.target === e.currentTarget && safeClose()}
     >
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={safeClose} />
 
       <div
         className="sheet-enter relative w-full rounded-t-3xl px-5 pt-4 pb-10 z-10"

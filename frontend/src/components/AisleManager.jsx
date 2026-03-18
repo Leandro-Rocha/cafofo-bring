@@ -327,6 +327,11 @@ export default function AisleManager({ aisles, onClose, onRefresh }) {
             + Novo corredor
           </button>
         )}
+
+        {/* Version info */}
+        <p className="text-center text-[11px] text-gray-300 font-mono mt-6 pb-2">
+          {__BUILD_SHA__} · {new Date(__BUILD_TIME__).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+        </p>
       </div>
     </div>
   );

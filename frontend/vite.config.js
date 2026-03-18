@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [react()],
   define: {
     __BUILD_SHA__: JSON.stringify(process.env.VITE_BUILD_SHA || 'dev'),
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
   },
   server: {
     proxy: {

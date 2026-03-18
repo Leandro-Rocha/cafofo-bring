@@ -1,23 +1,31 @@
 import { useRef } from 'react';
 import { getCategoryMeta } from '../categories';
 
-// Module-level flag: survives component unmount caused by list reorder after hold
+// Module-level flag: survives component unmount when item moves to purchased list
 let holdJustFired = false;
 
 export default function ItemBlock({ item, onTap, onHold, aisleMeta }) {
   const holdTimer = useRef(null);
   const didHold = useRef(false);
+  const startPos = useRef({ x: 0, y: 0 });
   const meta = aisleMeta || getCategoryMeta(item.category);
   const emoji = item.emoji || meta.emoji;
 
   const startHold = (e) => {
-    e.currentTarget.setPointerCapture(e.pointerId);
+    startPos.current = { x: e.clientX, y: e.clientY };
     didHold.current = false;
     holdTimer.current = setTimeout(() => {
       didHold.current = true;
       holdJustFired = true;
       onHold?.(item.id);
     }, 500);
+  };
+
+  // Cancel hold if finger moves (user is scrolling)
+  const moveHold = (e) => {
+    const dx = e.clientX - startPos.current.x;
+    const dy = e.clientY - startPos.current.y;
+    if (Math.sqrt(dx * dx + dy * dy) > 8) cancel();
   };
 
   const endHold = () => {
@@ -41,9 +49,9 @@ export default function ItemBlock({ item, onTap, onHold, aisleMeta }) {
         minHeight: 100,
         opacity: item.purchased ? 0.5 : 1,
         boxShadow: item.purchased ? 'none' : '0 2px 16px rgba(0,0,0,0.07)',
-        touchAction: 'none',
       }}
       onPointerDown={startHold}
+      onPointerMove={moveHold}
       onPointerUp={endHold}
       onPointerCancel={cancel}
     >

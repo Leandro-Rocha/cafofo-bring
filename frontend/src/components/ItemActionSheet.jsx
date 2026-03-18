@@ -4,6 +4,7 @@ import { getCategoryMeta } from '../categories';
 export default function ItemActionSheet({ item, aisles, onMove, onDelete, onToggle, onRename, onClose }) {
   const [editing, setEditing] = useState(false);
   const [nameVal, setNameVal] = useState(item.name);
+  const [quantityVal, setQuantityVal] = useState(item.quantity || '');
   const visibleAisles = aisles ? aisles.filter((a) => !a.hidden) : [];
 
   const handleMove = (aisleName) => {
@@ -23,13 +24,14 @@ export default function ItemActionSheet({ item, aisles, onMove, onDelete, onTogg
 
   const handleRename = () => {
     const trimmed = nameVal.trim();
-    if (trimmed && trimmed !== item.name) onRename(item.id, trimmed);
+    if (trimmed) onRename(item.id, trimmed, quantityVal.trim() || null);
     onClose();
   };
 
   const cancelEdit = () => {
     setEditing(false);
     setNameVal(item.name);
+    setQuantityVal(item.quantity || '');
   };
 
   return (
@@ -70,21 +72,32 @@ export default function ItemActionSheet({ item, aisles, onMove, onDelete, onTogg
 
         {editing ? (
           /* Edit mode */
-          <div className="flex gap-2">
-            <button
-              onClick={cancelEdit}
-              className="flex-1 py-3.5 rounded-2xl font-extrabold text-sm text-gray-500 bg-gray-100 active:scale-95 transition-transform"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={handleRename}
-              disabled={!nameVal.trim()}
-              className="flex-1 py-3.5 rounded-2xl font-extrabold text-sm text-white active:scale-95 transition-transform disabled:opacity-40"
-              style={{ background: 'linear-gradient(135deg, #7c3aed, #2563eb)' }}
-            >
-              Salvar
-            </button>
+          <div className="flex flex-col gap-3">
+            <div>
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Observações</label>
+              <input
+                value={quantityVal}
+                onChange={(e) => setQuantityVal(e.target.value)}
+                placeholder="ex: 2 litros, sem lactose, marca X..."
+                className="mt-1 w-full border border-gray-200 rounded-2xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-gray-50"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={cancelEdit}
+                className="flex-1 py-3.5 rounded-2xl font-extrabold text-sm text-gray-500 bg-gray-100 active:scale-95 transition-transform"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleRename}
+                disabled={!nameVal.trim()}
+                className="flex-1 py-3.5 rounded-2xl font-extrabold text-sm text-white active:scale-95 transition-transform disabled:opacity-40"
+                style={{ background: 'linear-gradient(135deg, #7c3aed, #2563eb)' }}
+              >
+                Salvar
+              </button>
+            </div>
           </div>
         ) : (
           <>

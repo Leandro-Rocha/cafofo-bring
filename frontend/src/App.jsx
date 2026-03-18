@@ -107,9 +107,9 @@ export default function App() {
     handleToggle(id);
   };
 
-  const handleRename = async (id, name) => {
+  const handleRename = async (id, name, quantity) => {
     try {
-      const updated = await renameItem(id, name);
+      const updated = await renameItem(id, name, quantity);
       setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
     } catch {
       load();
@@ -205,7 +205,7 @@ export default function App() {
           onMove={handleMove}
           onToggle={(id) => { handleToggle(id); setHeldItem(null); }}
           onDelete={(id) => { handleDelete(id); setHeldItem(null); }}
-          onRename={(id, name) => { handleRename(id, name); setHeldItem(null); }}
+          onRename={(id, name, quantity) => { handleRename(id, name, quantity); setHeldItem(null); }}
           onClose={() => setHeldItem(null)}
         />
       )}

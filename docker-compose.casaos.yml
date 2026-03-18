@@ -6,6 +6,7 @@ services:
     environment:
       - PORT=3001
       - DB_PATH=/data/shopping.db
+      - NOTIFY_TOKEN=${NOTIFY_TOKEN}
     volumes:
       - db-data:/data
     ports:

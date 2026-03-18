@@ -47,3 +47,12 @@ jobs:
         run: |
           docker compose -f docker-compose.casaos.yml pull
           docker compose -f docker-compose.casaos.yml up -d --remove-orphans
+
+      - name: Notify deploy
+        if: always()
+        run: |
+          sleep 5
+          curl -s -X POST http://localhost:4001/api/notify/deploy \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.NOTIFY_TOKEN }}" \
+            -d "{\"actor\": \"${{ github.actor }}\", \"branch\": \"${{ github.ref_name }}\", \"commit\": \"$(git log -1 --pretty='%s')\"}" || true

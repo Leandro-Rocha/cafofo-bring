@@ -74,7 +74,9 @@ router.patch('/:id/name', (req, res) => {
   if (!item) return res.status(404).json({ error: 'Item não encontrado' });
 
   const capitalized = name.trim().charAt(0).toUpperCase() + name.trim().slice(1);
-  db.prepare('UPDATE items SET name = ? WHERE id = ?').run(capitalized, req.params.id);
+  const { quantity } = req.body;
+  db.prepare('UPDATE items SET name = ?, quantity = ? WHERE id = ?')
+    .run(capitalized, quantity?.trim() || null, req.params.id);
 
   // Keep history display_name in sync
   db.prepare('UPDATE item_history SET display_name = ? WHERE name_normalized = ?')

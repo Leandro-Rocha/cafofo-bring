@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const wa = require('../whatsapp');
+const wa = require('../zap');
 
 router.post('/deploy', (req, res) => {
   const { commit, branch, actor, status, service } = req.body;

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const wa = require('../whatsapp');
+const wa = require('../zap');
 
 function normalizeName(name) {
   return name.toLowerCase().trim();

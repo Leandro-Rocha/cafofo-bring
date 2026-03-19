@@ -1,6 +1,6 @@
 const db = require('../db');
 const { detectEmoji } = require('../emojiDetection');
-const wa = require('../whatsapp');
+const wa = require('../zap');
 
 function normalizeName(name) {
   return name.toLowerCase().trim();

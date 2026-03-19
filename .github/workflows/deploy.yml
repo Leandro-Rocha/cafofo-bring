@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Notify build started
         run: |
-          curl -s -X POST http://localhost:4001/api/notify/deploy \
+          curl -s -X POST http://192.168.0.220:4001/api/notify/deploy \
             -H "Content-Type: application/json" \
             -d "{\"actor\": \"${{ github.actor }}\", \"branch\": \"${{ github.ref_name }}\", \"commit\": \"${{ github.event.head_commit.message }}\", \"status\": \"🏗️ Build iniciado\"}" || true
 
@@ -77,6 +77,6 @@ jobs:
           fi
 
           sleep 5
-          curl -s -X POST http://localhost:4001/api/notify/deploy \
+          curl -s -X POST http://192.168.0.220:4001/api/notify/deploy \
             -H "Content-Type: application/json" \
             -d "{\"actor\": \"${{ github.actor }}\", \"branch\": \"${{ github.ref_name }}\", \"commit\": \"$(git log -1 --pretty='%s')\", \"status\": \"$STATUS\"}" || true

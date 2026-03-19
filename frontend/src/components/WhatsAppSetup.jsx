@@ -1,42 +1,22 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { fetchWaStatus, fetchWaGroups, setWaGroup, setWaInterval, setWaGroqKey } from '../api';
 
 export default function WhatsAppSetup({ onClose }) {
   const [status, setStatus] = useState(null);
   const [groups, setGroups] = useState([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
-  const [pickingFor, setPickingFor] = useState(null);
   const [intervalVal, setIntervalVal] = useState(10);
   const [saved, setSaved] = useState(false);
   const [groqKey, setGroqKey] = useState('');
   const [groqSaved, setGroqSaved] = useState(false);
-  const pollRef = useRef(null);
-
-  const load = async () => {
-    try {
-      const s = await fetchWaStatus();
-      setStatus(s);
-      setIntervalVal(s.intervalMinutes);
-      return s;
-    } catch {
-      return null;
-    }
-  };
 
   useEffect(() => {
-    const poll = async () => {
-      const s = await load();
-      // Keep polling while connecting (QR may refresh every ~20s)
-      if (s?.status === 'connecting' || s?.status === 'disconnected') {
-        pollRef.current = setTimeout(poll, 4000);
-      }
-    };
-    poll();
-    return () => clearTimeout(pollRef.current);
+    fetchWaStatus()
+      .then((s) => { setStatus(s); setIntervalVal(s.intervalMinutes); })
+      .catch(() => {});
   }, []);
 
-  const handleLoadGroups = async (target) => {
-    setPickingFor(target);
+  const handleLoadGroups = async () => {
     setLoadingGroups(true);
     const g = await fetchWaGroups();
     setGroups(g);
@@ -46,8 +26,8 @@ export default function WhatsAppSetup({ onClose }) {
   const handleSelectGroup = async (group) => {
     await setWaGroup(group.id, group.name);
     setGroups([]);
-    setPickingFor(null);
-    await load();
+    const s = await fetchWaStatus();
+    setStatus(s);
   };
 
   const handleSaveInterval = async () => {
@@ -61,26 +41,18 @@ export default function WhatsAppSetup({ onClose }) {
     setGroqKey('');
     setGroqSaved(true);
     setTimeout(() => setGroqSaved(false), 2000);
-    await load();
   };
 
-  const statusLabel = {
-    connected: 'Conectado',
-    connecting: 'Aguardando QR',
-    disconnected: 'Desconectado',
-  };
-
+  const zapStatus = status?.status;
   const statusStyle = {
     connected: 'bg-green-100 text-green-700',
     connecting: 'bg-yellow-100 text-yellow-700',
     disconnected: 'bg-gray-100 text-gray-500',
-  };
+  }[zapStatus] || 'bg-gray-100 text-gray-500';
+  const statusLabel = { connected: 'Conectado', connecting: 'Aguardando QR', disconnected: 'Desconectado' }[zapStatus] || 'Desconectado';
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
+    <div className="fixed inset-0 z-50 flex items-end" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
       <div
@@ -89,57 +61,31 @@ export default function WhatsAppSetup({ onClose }) {
       >
         <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
 
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2 mb-1">
           <span className="text-2xl">💬</span>
           <h2 className="text-lg font-extrabold text-gray-800">WhatsApp</h2>
           {status && (
-            <span className={`ml-auto text-xs font-bold px-2.5 py-1 rounded-full ${statusStyle[status.status] || statusStyle.disconnected}`}>
-              {statusLabel[status.status] || 'Desconectado'}
+            <span className={`ml-auto text-xs font-bold px-2.5 py-1 rounded-full ${statusStyle}`}>
+              {statusLabel}
             </span>
           )}
         </div>
         <p className="text-xs text-gray-400 mb-5">
-          Conexão gerenciada pelo <strong>cafofo-zap</strong>. Para escanear o QR acesse{' '}
-          <a href="http://192.168.0.220:3010" target="_blank" rel="noreferrer" className="text-indigo-500 underline">
-            192.168.0.220:3010
-          </a>.
+          via{' '}
+          <a href="http://192.168.0.220:3010" target="_blank" rel="noreferrer" className="text-indigo-400 underline">
+            cafofo-zap
+          </a>
         </p>
 
-        {!status && (
-          <p className="text-gray-400 text-sm text-center py-8">Carregando...</p>
-        )}
+        {!status && <p className="text-gray-400 text-sm text-center py-8">Carregando...</p>}
 
-        {/* QR Code */}
-        {status?.status === 'connecting' && (
-          <div className="flex flex-col items-center gap-3 mb-4">
-            <p className="text-sm text-gray-600 text-center">
-              Abra o WhatsApp → <strong>Dispositivos vinculados</strong> → <strong>Vincular dispositivo</strong> e escaneie:
-            </p>
-            {status.qr ? (
-              <img
-                src={status.qr}
-                alt="QR Code WhatsApp"
-                className="w-60 h-60 rounded-2xl border-4 border-green-100"
-              />
-            ) : (
-              <div className="w-60 h-60 rounded-2xl border-4 border-gray-100 bg-gray-50 flex items-center justify-center text-gray-400 text-sm">
-                Gerando QR...
-              </div>
-            )}
-            <p className="text-xs text-gray-400">O QR é atualizado automaticamente a cada ~20s</p>
-          </div>
-        )}
-
-        {/* Connected state */}
-        {status?.status === 'connected' && (
+        {status && (
           <div className="flex flex-col gap-4">
 
             {/* Group picker list */}
             {groups.length > 0 && (
               <div className="flex flex-col gap-2">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                  {pickingFor === 'notify' ? 'Grupo de notificações técnicas' : 'Grupo da lista'}
-                </p>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Selecionar grupo</p>
                 {groups.map((g) => (
                   <button
                     key={g.id}
@@ -149,7 +95,7 @@ export default function WhatsAppSetup({ onClose }) {
                     💬 {g.name}
                   </button>
                 ))}
-                <button onClick={() => { setGroups([]); setPickingFor(null); }} className="text-xs text-gray-400 mt-1">
+                <button onClick={() => setGroups([])} className="text-xs text-gray-400 mt-1">
                   Cancelar
                 </button>
               </div>
@@ -163,7 +109,7 @@ export default function WhatsAppSetup({ onClose }) {
                   <p className="font-bold text-gray-800 truncate">{status.groupName ? `💬 ${status.groupName}` : 'Não configurado'}</p>
                 </div>
                 <button
-                  onClick={() => handleLoadGroups('list')}
+                  onClick={handleLoadGroups}
                   disabled={loadingGroups}
                   className="px-3 py-2 rounded-xl font-bold text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 active:scale-95 transition-transform disabled:opacity-40 flex-shrink-0"
                 >
@@ -179,10 +125,7 @@ export default function WhatsAppSetup({ onClose }) {
               </label>
               <div className="flex items-center gap-3">
                 <input
-                  type="number"
-                  min="1"
-                  max="120"
-                  value={intervalVal}
+                  type="number" min="1" max="120" value={intervalVal}
                   onChange={(e) => setIntervalVal(parseInt(e.target.value) || 10)}
                   className="w-20 border border-gray-200 rounded-xl px-3 py-2 text-center font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-300"
                 />
@@ -207,8 +150,7 @@ export default function WhatsAppSetup({ onClose }) {
               </label>
               <div className="flex gap-2">
                 <input
-                  type="password"
-                  value={groqKey}
+                  type="password" value={groqKey}
                   onChange={(e) => setGroqKey(e.target.value)}
                   placeholder={status.hasGroqKey ? '••••••••••••••••' : 'gsk_...'}
                   className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-gray-50"
@@ -223,19 +165,10 @@ export default function WhatsAppSetup({ onClose }) {
                 </button>
               </div>
               <p className="text-xs text-gray-400 mt-1">
-                Necessária para transcrever áudios. Grátis em console.groq.com
+                Necessária para parsear áudios em itens. Grátis em console.groq.com
               </p>
             </div>
 
-          </div>
-        )}
-
-        {/* Disconnected with no QR (e.g. just logged out) */}
-        {status?.status === 'disconnected' && !status.qr && (
-          <div className="flex flex-col items-center gap-3 py-6 text-center">
-            <span className="text-5xl">📵</span>
-            <p className="text-gray-500 text-sm">Aguardando conexão...</p>
-            <p className="text-gray-400 text-xs">O QR vai aparecer em instantes.</p>
           </div>
         )}
       </div>

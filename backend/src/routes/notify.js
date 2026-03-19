@@ -9,7 +9,7 @@ router.post('/deploy', (req, res) => {
   if (branch) lines.push(`🌿 ${branch}`);
   if (commit) lines.push(`📝 ${commit}`);
 
-  wa.sendMessage(lines.join('\n')).catch(console.error);
+  wa.sendNotifyMessage(lines.join('\n')).catch(console.error);
   res.json({ ok: true });
 });
 

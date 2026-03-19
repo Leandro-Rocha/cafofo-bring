@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { fetchWaStatus, fetchWaGroups, setWaGroup, setWaInterval, disconnectWa, setWaGroqKey } from '../api';
+import { fetchWaStatus, fetchWaGroups, setWaGroup, setWaNotifyGroup, setWaInterval, disconnectWa, setWaGroqKey } from '../api';
 
 export default function WhatsAppSetup({ onClose }) {
   const [status, setStatus] = useState(null);
   const [groups, setGroups] = useState([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
+  const [pickingFor, setPickingFor] = useState(null); // 'list' | 'notify'
   const [intervalVal, setIntervalVal] = useState(10);
   const [saved, setSaved] = useState(false);
   const [groqKey, setGroqKey] = useState('');
@@ -34,7 +35,8 @@ export default function WhatsAppSetup({ onClose }) {
     return () => clearTimeout(pollRef.current);
   }, []);
 
-  const handleLoadGroups = async () => {
+  const handleLoadGroups = async (target) => {
+    setPickingFor(target);
     setLoadingGroups(true);
     const g = await fetchWaGroups();
     setGroups(g);
@@ -42,8 +44,13 @@ export default function WhatsAppSetup({ onClose }) {
   };
 
   const handleSelectGroup = async (group) => {
-    await setWaGroup(group.id, group.name);
+    if (pickingFor === 'notify') {
+      await setWaNotifyGroup(group.id, group.name);
+    } else {
+      await setWaGroup(group.id, group.name);
+    }
     setGroups([]);
+    setPickingFor(null);
     await load();
   };
 
@@ -138,30 +145,12 @@ export default function WhatsAppSetup({ onClose }) {
         {status?.status === 'connected' && (
           <div className="flex flex-col gap-4">
 
-            {/* Active group */}
-            {status.groupName ? (
-              <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
-                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mb-1">Grupo ativo</p>
-                <p className="font-bold text-gray-800">💬 {status.groupName}</p>
-              </div>
-            ) : (
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-                <p className="text-sm text-amber-700 font-semibold">Nenhum grupo selecionado ainda. Escolha abaixo:</p>
-              </div>
-            )}
-
-            {/* Group picker */}
-            {groups.length === 0 ? (
-              <button
-                onClick={handleLoadGroups}
-                disabled={loadingGroups}
-                className="w-full py-3 rounded-2xl font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 active:scale-95 transition-transform disabled:opacity-40"
-              >
-                {loadingGroups ? 'Carregando grupos...' : status.groupName ? 'Trocar grupo' : 'Escolher grupo'}
-              </button>
-            ) : (
+            {/* Group picker list */}
+            {groups.length > 0 && (
               <div className="flex flex-col gap-2">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Selecione o grupo</p>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                  {pickingFor === 'notify' ? 'Grupo de notificações técnicas' : 'Grupo da lista'}
+                </p>
                 {groups.map((g) => (
                   <button
                     key={g.id}
@@ -171,14 +160,44 @@ export default function WhatsAppSetup({ onClose }) {
                     💬 {g.name}
                   </button>
                 ))}
-                <button
-                  onClick={() => setGroups([])}
-                  className="text-xs text-gray-400 mt-1"
-                >
+                <button onClick={() => { setGroups([]); setPickingFor(null); }} className="text-xs text-gray-400 mt-1">
                   Cancelar
                 </button>
               </div>
             )}
+
+            {groups.length === 0 && (<>
+              {/* Lista group */}
+              <div className="flex items-center gap-3 p-4 rounded-2xl border"
+                style={{ background: status.groupName ? '#f0fdf4' : '#fffbeb', borderColor: status.groupName ? '#86efac' : '#fcd34d' }}>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mb-0.5">Grupo da lista</p>
+                  <p className="font-bold text-gray-800 truncate">{status.groupName ? `💬 ${status.groupName}` : 'Não configurado'}</p>
+                </div>
+                <button
+                  onClick={() => handleLoadGroups('list')}
+                  disabled={loadingGroups}
+                  className="px-3 py-2 rounded-xl font-bold text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 active:scale-95 transition-transform disabled:opacity-40 flex-shrink-0"
+                >
+                  {loadingGroups && pickingFor === 'list' ? '...' : 'Trocar'}
+                </button>
+              </div>
+
+              {/* Notify group */}
+              <div className="flex items-center gap-3 p-4 rounded-2xl border border-gray-200 bg-gray-50">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mb-0.5">Grupo técnico (deploys)</p>
+                  <p className="font-bold text-gray-700 truncate">{status.notifyGroupName ? `💬 ${status.notifyGroupName}` : <span className="font-normal text-gray-400">Usa o grupo da lista</span>}</p>
+                </div>
+                <button
+                  onClick={() => handleLoadGroups('notify')}
+                  disabled={loadingGroups}
+                  className="px-3 py-2 rounded-xl font-bold text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 active:scale-95 transition-transform disabled:opacity-40 flex-shrink-0"
+                >
+                  {loadingGroups && pickingFor === 'notify' ? '...' : 'Trocar'}
+                </button>
+              </div>
+            </>)}
 
             {/* Interval */}
             <div>

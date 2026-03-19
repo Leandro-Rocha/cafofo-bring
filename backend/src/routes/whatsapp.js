@@ -18,6 +18,12 @@ router.post('/group', (req, res) => {
   res.json({ ok: true });
 });
 
+router.post('/notify-group', (req, res) => {
+  const { groupId, groupName } = req.body;
+  wa.setNotifyGroup(groupId || null, groupName || null);
+  res.json({ ok: true });
+});
+
 router.post('/interval', (req, res) => {
   const minutes = parseInt(req.body.minutes);
   if (!minutes || minutes < 1 || minutes > 120) {

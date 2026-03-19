@@ -88,6 +88,14 @@ export async function setWaInterval(minutes) {
   });
 }
 
+export async function setWaNotifyGroup(groupId, groupName) {
+  await fetch('/api/whatsapp/notify-group', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ groupId, groupName }),
+  });
+}
+
 export async function disconnectWa() {
   await fetch('/api/whatsapp/disconnect', { method: 'POST' });
 }

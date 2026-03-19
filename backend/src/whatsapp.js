@@ -15,6 +15,8 @@ let status = 'disconnected';
 let config = {
   groupId: null,
   groupName: null,
+  notifyGroupId: null,
+  notifyGroupName: null,
   intervalMinutes: parseInt(process.env.WA_NOTIFY_INTERVAL) || 10,
   groqApiKey: null,
 };
@@ -216,6 +218,16 @@ async function sendMessage(text) {
   }
 }
 
+async function sendNotifyMessage(text) {
+  const target = config.notifyGroupId || config.groupId;
+  if (!sock || status !== 'connected' || !target) return;
+  try {
+    await sock.sendMessage(target, { text });
+  } catch (err) {
+    console.error('[whatsapp] erro ao enviar notificação:', err.message);
+  }
+}
+
 async function getGroups() {
   if (!sock || status !== 'connected') return [];
   try {
@@ -231,6 +243,12 @@ async function getGroups() {
 function setGroup(groupId, groupName) {
   config.groupId = groupId;
   config.groupName = groupName;
+  saveConfig();
+}
+
+function setNotifyGroup(groupId, groupName) {
+  config.notifyGroupId = groupId;
+  config.notifyGroupName = groupName;
   saveConfig();
 }
 
@@ -250,6 +268,8 @@ function getStatus() {
     hasGroup: !!config.groupId,
     groupName: config.groupName,
     groupId: config.groupId,
+    notifyGroupName: config.notifyGroupName,
+    notifyGroupId: config.notifyGroupId,
     intervalMinutes: config.intervalMinutes,
     hasGroqKey: !!config.groqApiKey,
     qr: currentQR,
@@ -269,4 +289,4 @@ function disconnect() {
   fs.rmSync(AUTH_DIR, { recursive: true, force: true });
 }
 
-module.exports = { connect, getStatus, getGroups, setGroup, setIntervalMinutes, setGroqApiKey, parseItemsFromText, sendMessage, queueEvent, disconnect, setAudioMessageHandler };
+module.exports = { connect, getStatus, getGroups, setGroup, setNotifyGroup, setIntervalMinutes, setGroqApiKey, parseItemsFromText, sendMessage, sendNotifyMessage, queueEvent, disconnect, setAudioMessageHandler };

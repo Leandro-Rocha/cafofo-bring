@@ -10,9 +10,15 @@ jobs:
     steps:
       - name: Notify build started
         run: |
+          jq -n \
+            --arg actor "${{ github.actor }}" \
+            --arg branch "${{ github.ref_name }}" \
+            --arg commit "$(echo '${{ github.event.head_commit.message }}' | head -1)" \
+            --arg status "🏗️ Build iniciado" \
+            '{actor: $actor, branch: $branch, commit: $commit, status: $status}' | \
           curl -s -X POST http://192.168.0.220:4001/api/notify/deploy \
             -H "Content-Type: application/json" \
-            -d "{\"actor\": \"${{ github.actor }}\", \"branch\": \"${{ github.ref_name }}\", \"commit\": \"${{ github.event.head_commit.message }}\", \"status\": \"🏗️ Build iniciado\"}" || true
+            -d @- || true
 
   build:
     needs: notify-start
@@ -77,6 +83,12 @@ jobs:
           fi
 
           sleep 5
+          jq -n \
+            --arg actor "${{ github.actor }}" \
+            --arg branch "${{ github.ref_name }}" \
+            --arg commit "$(git log -1 --pretty='%s')" \
+            --arg status "$STATUS" \
+            '{actor: $actor, branch: $branch, commit: $commit, status: $status}' | \
           curl -s -X POST http://192.168.0.220:4001/api/notify/deploy \
             -H "Content-Type: application/json" \
-            -d "{\"actor\": \"${{ github.actor }}\", \"branch\": \"${{ github.ref_name }}\", \"commit\": \"$(git log -1 --pretty='%s')\", \"status\": \"$STATUS\"}" || true
+            -d @- || true

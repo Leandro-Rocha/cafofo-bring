@@ -10,8 +10,10 @@
           ],
           "samples": [
             "adicionar {item}",
+            "adicione {item}",
             "adiciona {item}",
             "coloca {item} na lista",
+            "coloque {item} na lista",
             "colocar {item} na lista",
             "preciso de {item}",
             "falta {item}",

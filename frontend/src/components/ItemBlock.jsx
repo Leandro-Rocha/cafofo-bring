@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { getCategoryMeta } from '../categories';
 
 // Module-level flag: survives component unmount when item moves to purchased list
@@ -8,8 +8,20 @@ export default function ItemBlock({ item, onTap, onHold, aisleMeta }) {
   const holdTimer = useRef(null);
   const didHold = useRef(false);
   const startPos = useRef({ x: 0, y: 0 });
+  const prevPurchased = useRef(item.purchased);
   const meta = aisleMeta || getCategoryMeta(item.category);
   const emoji = item.emoji || meta.emoji;
+
+  const [showCheck, setShowCheck] = useState(false);
+
+  useEffect(() => {
+    if (!prevPurchased.current && item.purchased) {
+      setShowCheck(true);
+      const t = setTimeout(() => setShowCheck(false), 700);
+      return () => clearTimeout(t);
+    }
+    prevPurchased.current = item.purchased;
+  }, [item.purchased]);
 
   const startHold = (e) => {
     startPos.current = { x: e.clientX, y: e.clientY };
@@ -48,7 +60,7 @@ export default function ItemBlock({ item, onTap, onHold, aisleMeta }) {
 
   return (
     <div
-      className="item-card item-enter rounded-2xl flex flex-col items-center justify-center text-center cursor-pointer select-none overflow-hidden"
+      className="item-card item-enter relative rounded-2xl flex flex-col items-center justify-center text-center cursor-pointer select-none overflow-hidden"
       style={{
         background: item.purchased ? 'rgba(255,255,255,0.5)' : 'white',
         border: `2px solid ${item.purchased ? '#e5e7eb' : meta.border}`,
@@ -62,6 +74,8 @@ export default function ItemBlock({ item, onTap, onHold, aisleMeta }) {
       onPointerUp={endHold}
       onPointerCancel={cancel}
     >
+      {showCheck && <div className="check-overlay">✓</div>}
+
       {/* Color accent bar */}
       {!item.purchased && (
         <div className="w-full h-1.5 rounded-t-lg" style={{ background: meta.color }} />

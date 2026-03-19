@@ -8,8 +8,8 @@ router.post('/deploy', (req, res) => {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const { commit, branch, actor } = req.body;
-  const lines = ['🚀 *Cafofo Bring* — deploy concluído!'];
+  const { commit, branch, actor, status } = req.body;
+  const lines = [`🚀 *Cafofo Bring* — ${status || 'deploy concluído!'}`];
   if (actor) lines.push(`👤 ${actor}`);
   if (branch) lines.push(`🌿 ${branch}`);
   if (commit) lines.push(`📝 ${commit}`);

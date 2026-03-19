@@ -40,20 +40,34 @@ jobs:
   deploy:
     needs: build
     runs-on: [self-hosted, casaos]
+    if: always()
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Deploy
+        id: deploy
+        if: needs.build.result == 'success'
         run: |
           docker compose -f docker-compose.casaos.yml pull
           docker compose -f docker-compose.casaos.yml up -d --remove-orphans
 
-      - name: Notify deploy
+      - name: Notify
         if: always()
         run: |
+          BUILD="${{ needs.build.result }}"
+          DEPLOY="${{ steps.deploy.outcome }}"
+
+          if [ "$BUILD" != "success" ]; then
+            STATUS="❌ Build falhou"
+          elif [ "$DEPLOY" = "success" ]; then
+            STATUS="✅ Deploy concluído"
+          else
+            STATUS="⚠️ Build ok, mas o deploy falhou"
+          fi
+
           sleep 5
           curl -s -X POST http://localhost:4001/api/notify/deploy \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ secrets.NOTIFY_TOKEN }}" \
-            -d "{\"actor\": \"${{ github.actor }}\", \"branch\": \"${{ github.ref_name }}\", \"commit\": \"$(git log -1 --pretty='%s')\"}" || true
+            -d "{\"actor\": \"${{ github.actor }}\", \"branch\": \"${{ github.ref_name }}\", \"commit\": \"$(git log -1 --pretty='%s')\", \"status\": \"$STATUS\"}" || true

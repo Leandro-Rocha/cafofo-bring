@@ -26,8 +26,7 @@ export default function WhatsAppSetup({ onClose }) {
   const handleSelectGroup = async (group) => {
     await setWaGroup(group.id, group.name);
     setGroups([]);
-    const s = await fetchWaStatus();
-    setStatus(s);
+    setStatus((prev) => ({ ...prev, groupId: group.id, groupName: group.name, hasGroup: true }));
   };
 
   const handleSaveInterval = async () => {

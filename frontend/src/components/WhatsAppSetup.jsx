@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { fetchWaStatus, fetchWaGroups, setWaGroup, setWaNotifyGroup, setWaInterval, disconnectWa, setWaGroqKey } from '../api';
+import { fetchWaStatus, fetchWaGroups, setWaGroup, setWaInterval, setWaGroqKey } from '../api';
 
 export default function WhatsAppSetup({ onClose }) {
   const [status, setStatus] = useState(null);
   const [groups, setGroups] = useState([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
-  const [pickingFor, setPickingFor] = useState(null); // 'list' | 'notify'
+  const [pickingFor, setPickingFor] = useState(null);
   const [intervalVal, setIntervalVal] = useState(10);
   const [saved, setSaved] = useState(false);
   const [groqKey, setGroqKey] = useState('');
@@ -44,11 +44,7 @@ export default function WhatsAppSetup({ onClose }) {
   };
 
   const handleSelectGroup = async (group) => {
-    if (pickingFor === 'notify') {
-      await setWaNotifyGroup(group.id, group.name);
-    } else {
-      await setWaGroup(group.id, group.name);
-    }
+    await setWaGroup(group.id, group.name);
     setGroups([]);
     setPickingFor(null);
     await load();
@@ -66,19 +62,6 @@ export default function WhatsAppSetup({ onClose }) {
     setGroqSaved(true);
     setTimeout(() => setGroqSaved(false), 2000);
     await load();
-  };
-
-  const handleDisconnect = async () => {
-    await disconnectWa();
-    setGroups([]);
-    // After disconnect, start polling again for new QR
-    const poll = async () => {
-      const s = await load();
-      if (s?.status !== 'connected') {
-        pollRef.current = setTimeout(poll, 4000);
-      }
-    };
-    poll();
   };
 
   const statusLabel = {
@@ -106,7 +89,7 @@ export default function WhatsAppSetup({ onClose }) {
       >
         <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
 
-        <div className="flex items-center gap-2 mb-5">
+        <div className="flex items-center gap-2 mb-2">
           <span className="text-2xl">💬</span>
           <h2 className="text-lg font-extrabold text-gray-800">WhatsApp</h2>
           {status && (
@@ -115,6 +98,12 @@ export default function WhatsAppSetup({ onClose }) {
             </span>
           )}
         </div>
+        <p className="text-xs text-gray-400 mb-5">
+          Conexão gerenciada pelo <strong>cafofo-zap</strong>. Para escanear o QR acesse{' '}
+          <a href="http://192.168.0.220:3010" target="_blank" rel="noreferrer" className="text-indigo-500 underline">
+            192.168.0.220:3010
+          </a>.
+        </p>
 
         {!status && (
           <p className="text-gray-400 text-sm text-center py-8">Carregando...</p>
@@ -166,8 +155,7 @@ export default function WhatsAppSetup({ onClose }) {
               </div>
             )}
 
-            {groups.length === 0 && (<>
-              {/* Lista group */}
+            {groups.length === 0 && (
               <div className="flex items-center gap-3 p-4 rounded-2xl border"
                 style={{ background: status.groupName ? '#f0fdf4' : '#fffbeb', borderColor: status.groupName ? '#86efac' : '#fcd34d' }}>
                 <div className="flex-1 min-w-0">
@@ -179,25 +167,10 @@ export default function WhatsAppSetup({ onClose }) {
                   disabled={loadingGroups}
                   className="px-3 py-2 rounded-xl font-bold text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 active:scale-95 transition-transform disabled:opacity-40 flex-shrink-0"
                 >
-                  {loadingGroups && pickingFor === 'list' ? '...' : 'Trocar'}
+                  {loadingGroups ? '...' : 'Trocar'}
                 </button>
               </div>
-
-              {/* Notify group */}
-              <div className="flex items-center gap-3 p-4 rounded-2xl border border-gray-200 bg-gray-50">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mb-0.5">Grupo técnico (deploys)</p>
-                  <p className="font-bold text-gray-700 truncate">{status.notifyGroupName ? `💬 ${status.notifyGroupName}` : <span className="font-normal text-gray-400">Usa o grupo da lista</span>}</p>
-                </div>
-                <button
-                  onClick={() => handleLoadGroups('notify')}
-                  disabled={loadingGroups}
-                  className="px-3 py-2 rounded-xl font-bold text-sm text-indigo-700 bg-indigo-50 border border-indigo-100 active:scale-95 transition-transform disabled:opacity-40 flex-shrink-0"
-                >
-                  {loadingGroups && pickingFor === 'notify' ? '...' : 'Trocar'}
-                </button>
-              </div>
-            </>)}
+            )}
 
             {/* Interval */}
             <div>
@@ -254,13 +227,6 @@ export default function WhatsAppSetup({ onClose }) {
               </p>
             </div>
 
-            {/* Disconnect */}
-            <button
-              onClick={handleDisconnect}
-              className="w-full py-3 rounded-2xl font-bold text-red-500 bg-red-50 border border-red-100 active:scale-95 transition-transform"
-            >
-              Desconectar
-            </button>
           </div>
         )}
 

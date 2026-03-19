@@ -4,7 +4,7 @@ const wa = require('../whatsapp');
 
 router.post('/deploy', (req, res) => {
   const token = req.headers.authorization?.replace('Bearer ', '');
-  if (!process.env.NOTIFY_TOKEN || token !== process.env.NOTIFY_TOKEN) {
+  if (process.env.NOTIFY_TOKEN && token !== process.env.NOTIFY_TOKEN) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 

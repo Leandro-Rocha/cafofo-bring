@@ -5,7 +5,18 @@ on:
     branches: [main]
 
 jobs:
+  notify-start:
+    runs-on: [self-hosted, casaos]
+    steps:
+      - name: Notify build started
+        run: |
+          curl -s -X POST http://localhost:4001/api/notify/deploy \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.NOTIFY_TOKEN }}" \
+            -d "{\"actor\": \"${{ github.actor }}\", \"branch\": \"${{ github.ref_name }}\", \"commit\": \"${{ github.event.head_commit.message }}\", \"status\": \"🏗️ Build iniciado\"}" || true
+
   build:
+    needs: notify-start
     runs-on: ubuntu-latest
     permissions:
       contents: read

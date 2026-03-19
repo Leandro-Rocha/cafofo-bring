@@ -85,6 +85,33 @@ function setGroqApiKey(key) {
   saveConfig();
 }
 
+async function parseItemsFromText(text) {
+  const apiKey = config.groqApiKey || process.env.GROQ_API_KEY;
+  if (!apiKey) return null;
+
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'llama-3.1-8b-instant',
+      temperature: 0,
+      response_format: { type: 'json_object' },
+      messages: [
+        {
+          role: 'system',
+          content: 'Você extrai itens de lista de compras de mensagens em português. Responda APENAS com JSON no formato {"items": ["item1", "item2"]}. Normalize os nomes: sem pontuação, sem artigos desnecessários, primeira letra maiúscula. Se não houver itens de compra na mensagem, retorne {"items": []}.',
+        },
+        { role: 'user', content: text },
+      ],
+    }),
+  });
+
+  if (!res.ok) return null;
+  const data = await res.json();
+  const parsed = JSON.parse(data.choices[0].message.content);
+  return Array.isArray(parsed.items) ? parsed.items.filter(Boolean) : null;
+}
+
 async function transcribeAudio(buffer, mimetype) {
   const apiKey = config.groqApiKey || process.env.GROQ_API_KEY;
   if (!apiKey) throw new Error('Groq API key não configurada');
@@ -242,4 +269,4 @@ function disconnect() {
   fs.rmSync(AUTH_DIR, { recursive: true, force: true });
 }
 
-module.exports = { connect, getStatus, getGroups, setGroup, setIntervalMinutes, setGroqApiKey, sendMessage, queueEvent, disconnect, setAudioMessageHandler };
+module.exports = { connect, getStatus, getGroups, setGroup, setIntervalMinutes, setGroqApiKey, parseItemsFromText, sendMessage, queueEvent, disconnect, setAudioMessageHandler };

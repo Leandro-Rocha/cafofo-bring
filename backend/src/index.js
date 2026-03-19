@@ -28,15 +28,18 @@ app.use(express.json());
 app.set('io', io);
 
 wa.setAudioMessageHandler(async (text, reply) => {
-  const cleaned = text
-    .replace(/^(adiciona[r]?|coloca[r]?|bota[r]?|põe|preciso\s+de|quero|compra[r]?)\s+/i, '')
-    .replace(/\bna\s+lista\b/gi, '')
-    .trim();
+  let names = await wa.parseItemsFromText(text);
 
-  const names = cleaned
-    .split(/,|\s+e\s+|\s+mais\s+/i)
-    .map((s) => s.trim().replace(/[.,!?;:]+$/, '').trim())
-    .filter(Boolean);
+  if (!names) {
+    // Fallback: regex simples se Groq não estiver disponível
+    names = text
+      .replace(/^(adiciona[r]?|coloca[r]?|bota[r]?|põe|preciso\s+de|quero\s+que\s+adicione[s]?|quero|compra[r]?)\s+/i, '')
+      .replace(/\bna\s+lista\b/gi, '')
+      .trim()
+      .split(/,|\s+e\s+|\s+mais\s+/i)
+      .map((s) => s.trim().replace(/[.,!?;:]+$/, '').trim())
+      .filter(Boolean);
+  }
 
   if (!names.length) {
     await reply('❓ Não entendi o que adicionar.');

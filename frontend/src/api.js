@@ -92,6 +92,14 @@ export async function disconnectWa() {
   await fetch('/api/whatsapp/disconnect', { method: 'POST' });
 }
 
+export async function setWaGroqKey(key) {
+  await fetch('/api/whatsapp/groq-key', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key }),
+  });
+}
+
 // Aisles API
 export async function fetchAisles() {
   const res = await fetch(AISLES_BASE);

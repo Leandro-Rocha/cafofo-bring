@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { fetchWaStatus, fetchWaGroups, setWaGroup, setWaInterval, disconnectWa } from '../api';
+import { fetchWaStatus, fetchWaGroups, setWaGroup, setWaInterval, disconnectWa, setWaGroqKey } from '../api';
 
 export default function WhatsAppSetup({ onClose }) {
   const [status, setStatus] = useState(null);
@@ -7,6 +7,8 @@ export default function WhatsAppSetup({ onClose }) {
   const [loadingGroups, setLoadingGroups] = useState(false);
   const [intervalVal, setIntervalVal] = useState(10);
   const [saved, setSaved] = useState(false);
+  const [groqKey, setGroqKey] = useState('');
+  const [groqSaved, setGroqSaved] = useState(false);
   const pollRef = useRef(null);
 
   const load = async () => {
@@ -49,6 +51,14 @@ export default function WhatsAppSetup({ onClose }) {
     await setWaInterval(intervalVal);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleSaveGroqKey = async () => {
+    await setWaGroqKey(groqKey.trim());
+    setGroqKey('');
+    setGroqSaved(true);
+    setTimeout(() => setGroqSaved(false), 2000);
+    await load();
   };
 
   const handleDisconnect = async () => {
@@ -195,6 +205,33 @@ export default function WhatsAppSetup({ onClose }) {
               </div>
               <p className="text-xs text-gray-400 mt-1">
                 O resumo é enviado após {intervalVal} min sem novas atividades na lista.
+              </p>
+            </div>
+
+            {/* Groq API key */}
+            <div>
+              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">
+                Groq API Key {status.hasGroqKey && <span className="text-green-500 normal-case font-normal">✓ configurada</span>}
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  value={groqKey}
+                  onChange={(e) => setGroqKey(e.target.value)}
+                  placeholder={status.hasGroqKey ? '••••••••••••••••' : 'gsk_...'}
+                  className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-gray-50"
+                />
+                <button
+                  onClick={handleSaveGroqKey}
+                  disabled={!groqKey.trim()}
+                  className="px-5 py-2 rounded-xl font-bold text-sm active:scale-95 transition-all disabled:opacity-40"
+                  style={{ background: groqSaved ? '#22c55e' : '#4f46e5', color: 'white' }}
+                >
+                  {groqSaved ? '✓' : 'Salvar'}
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                Necessária para transcrever áudios. Grátis em console.groq.com
               </p>
             </div>
 

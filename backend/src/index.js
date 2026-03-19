@@ -4,7 +4,7 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const itemsRouter = require('./routes/items');
 
-require('./db'); // init database
+const db = require('./db');
 const wa = require('./whatsapp');
 wa.connect().catch((err) => console.error('[whatsapp] falha ao conectar:', err.message));
 
@@ -26,6 +26,43 @@ app.get('/alexa', (_, res) => res.json({ ok: true, endpoint: 'alexa' }));
 
 app.use(express.json());
 app.set('io', io);
+
+wa.setAudioMessageHandler(async (text, reply) => {
+  const cleaned = text
+    .replace(/^(adiciona[r]?|coloca[r]?|bota[r]?|põe|preciso\s+de|quero|compra[r]?)\s+/i, '')
+    .replace(/\bna\s+lista\b/gi, '')
+    .trim();
+
+  const names = cleaned
+    .split(/,|\s+e\s+|\s+mais\s+/i)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (!names.length) {
+    await reply('❓ Não entendi o que adicionar.');
+    return;
+  }
+
+  const added = [];
+  for (const name of names) {
+    const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
+    const remembered = db.prepare('SELECT category FROM item_defaults WHERE name_normalized = ?').get(name.toLowerCase());
+    const category = remembered?.category || 'Outros';
+    const result = db.prepare('INSERT INTO items (name, category) VALUES (?, ?)').run(capitalized, category);
+    const item = db.prepare('SELECT * FROM items WHERE id = ?').get(result.lastInsertRowid);
+    io.emit('item:added', item);
+    db.prepare(`
+      INSERT INTO item_history (name_normalized, display_name, emoji, count, last_added_at)
+      VALUES (?, ?, NULL, 1, CURRENT_TIMESTAMP)
+      ON CONFLICT(name_normalized) DO UPDATE SET
+        count = count + 1, display_name = excluded.display_name, last_added_at = CURRENT_TIMESTAMP
+    `).run(name.toLowerCase(), capitalized);
+    wa.queueEvent('added', capitalized, 'WhatsApp');
+    added.push(capitalized);
+  }
+
+  await reply(`✅ ${added.length > 1 ? 'Adicionados' : 'Adicionado'}: ${added.join(', ')}`);
+});
 
 app.use('/api/items', itemsRouter);
 app.use('/api/aisles', require('./routes/aisles'));

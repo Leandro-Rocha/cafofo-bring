@@ -1,4 +1,4 @@
-const { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, Browsers } = require('@whiskeysockets/baileys');
+const { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, Browsers, downloadMediaMessage } = require('@whiskeysockets/baileys');
 const QRCode = require('qrcode');
 const pino = require('pino');
 const path = require('path');
@@ -16,6 +16,7 @@ let config = {
   groupId: null,
   groupName: null,
   intervalMinutes: parseInt(process.env.WA_NOTIFY_INTERVAL) || 10,
+  groqApiKey: null,
 };
 
 try {
@@ -71,6 +72,40 @@ async function flush() {
   await sendMessage(lines.join('\n'));
 }
 
+// --- Audio transcription ---
+
+let onAudioMessage = null;
+
+function setAudioMessageHandler(fn) {
+  onAudioMessage = fn;
+}
+
+function setGroqApiKey(key) {
+  config.groqApiKey = key || null;
+  saveConfig();
+}
+
+async function transcribeAudio(buffer, mimetype) {
+  const apiKey = config.groqApiKey || process.env.GROQ_API_KEY;
+  if (!apiKey) throw new Error('Groq API key não configurada');
+
+  const ext = (mimetype || '').includes('ogg') ? 'ogg' : 'mp4';
+  const form = new FormData();
+  form.append('file', new Blob([buffer], { type: mimetype || 'audio/ogg' }), `audio.${ext}`);
+  form.append('model', 'whisper-large-v3-turbo');
+  form.append('language', 'pt');
+  form.append('response_format', 'text');
+
+  const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}` },
+    body: form,
+  });
+
+  if (!res.ok) throw new Error(`Groq ${res.status}: ${await res.text()}`);
+  return (await res.text()).trim();
+}
+
 // --- Connection ---
 
 async function connect() {
@@ -89,6 +124,32 @@ async function connect() {
   });
 
   sock.ev.on('creds.update', saveCreds);
+
+  sock.ev.on('messages.upsert', async ({ messages, type }) => {
+    if (type !== 'notify') return;
+    for (const msg of messages) {
+      if (msg.key.fromMe) continue;
+      if (!config.groupId || msg.key.remoteJid !== config.groupId) continue;
+
+      const audio = msg.message?.audioMessage;
+      if (!audio || !onAudioMessage) continue;
+
+      const reply = (text) => sock.sendMessage(config.groupId, { text }, { quoted: msg }).catch(() => {});
+
+      try {
+        const buffer = await downloadMediaMessage(msg, 'buffer', {}, {
+          logger: pino({ level: 'silent' }),
+          reuploadRequest: sock.updateMediaMessage,
+        });
+        const text = await transcribeAudio(buffer, audio.mimetype);
+        console.log(`[whatsapp] áudio transcrito: "${text}"`);
+        await onAudioMessage(text, reply);
+      } catch (err) {
+        console.error('[whatsapp] erro ao processar áudio:', err.message);
+        await reply('❌ Erro ao processar o áudio.').catch(() => {});
+      }
+    }
+  });
 
   sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr }) => {
     if (qr) {
@@ -163,6 +224,7 @@ function getStatus() {
     groupName: config.groupName,
     groupId: config.groupId,
     intervalMinutes: config.intervalMinutes,
+    hasGroqKey: !!config.groqApiKey,
     qr: currentQR,
   };
 }
@@ -180,4 +242,4 @@ function disconnect() {
   fs.rmSync(AUTH_DIR, { recursive: true, force: true });
 }
 
-module.exports = { connect, getStatus, getGroups, setGroup, setIntervalMinutes, sendMessage, queueEvent, disconnect };
+module.exports = { connect, getStatus, getGroups, setGroup, setIntervalMinutes, setGroqApiKey, sendMessage, queueEvent, disconnect, setAudioMessageHandler };

@@ -100,15 +100,6 @@ app.use('/api/aisles', require('./routes/aisles'));
 app.use('/api/whatsapp', require('./routes/whatsapp'));
 app.get('/health', (_, res) => res.json({ ok: true }));
 
-app.get('/debug/zap', async (req, res) => {
-  res.json(await wa.getStatus());
-});
-
-app.post('/debug/zap/flush', async (req, res) => {
-  wa.queueEvent('added', 'Teste debug', 'App');
-  await wa.flushNow();
-  res.json({ ok: true });
-});
 
 // Serve frontend static files if present (production)
 const path = require('path');

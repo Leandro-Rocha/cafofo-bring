@@ -35,16 +35,13 @@ let flushTimer = null;
 
 function queueEvent(type, itemName, source) {
   eventQueue.push({ type, itemName, source });
-  console.log(`[zap] evento enfileirado: ${type} "${itemName}" (fila: ${eventQueue.length})`);
   if (!flushTimer) {
-    console.log(`[zap] flush agendado em ${config.intervalMinutes} min`);
     flushTimer = setTimeout(flush, config.intervalMinutes * 60 * 1000);
   }
 }
 
 async function flush() {
   flushTimer = null;
-  console.log(`[zap] flush disparado, ${eventQueue.length} eventos`);
   if (eventQueue.length === 0) return;
   const events = eventQueue.splice(0);
 
@@ -192,11 +189,7 @@ async function connect() {
 }
 
 async function sendMessage(text) {
-  if (!config.groupId) {
-    console.log('[zap] sendMessage ignorado: groupId não configurado');
-    return;
-  }
-  console.log(`[zap] enviando mensagem para ${config.groupId}`);
+  if (!config.groupId) return;
   try {
     await zapFetch('/send', {
       method: 'POST',
@@ -305,5 +298,4 @@ module.exports = {
   setAudioMessageHandler,
   getAudioMessageHandler,
   transcribeAudio,
-  flushNow: flush,
 };

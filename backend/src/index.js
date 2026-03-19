@@ -6,6 +6,7 @@ const itemsRouter = require('./routes/items');
 
 const db = require('./db');
 const wa = require('./whatsapp');
+const { detectEmoji } = require('./emojiDetection');
 wa.connect().catch((err) => console.error('[whatsapp] falha ao conectar:', err.message));
 
 const app = express();
@@ -51,7 +52,8 @@ wa.setAudioMessageHandler(async (text, reply) => {
     const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
     const remembered = db.prepare('SELECT category FROM item_defaults WHERE name_normalized = ?').get(name.toLowerCase());
     const category = remembered?.category || 'Outros';
-    const result = db.prepare('INSERT INTO items (name, category) VALUES (?, ?)').run(capitalized, category);
+    const emoji = detectEmoji(capitalized);
+    const result = db.prepare('INSERT INTO items (name, category, emoji) VALUES (?, ?, ?)').run(capitalized, category, emoji);
     const item = db.prepare('SELECT * FROM items WHERE id = ?').get(result.lastInsertRowid);
     io.emit('item:added', item);
     db.prepare(`

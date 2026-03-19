@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 import { getCategoryMeta } from '../categories';
 
 // Module-level flag: survives component unmount when item moves to purchased list
@@ -8,20 +8,10 @@ export default function ItemBlock({ item, onTap, onHold, aisleMeta }) {
   const holdTimer = useRef(null);
   const didHold = useRef(false);
   const startPos = useRef({ x: 0, y: 0 });
-  const prevPurchased = useRef(item.purchased);
   const meta = aisleMeta || getCategoryMeta(item.category);
   const emoji = item.emoji || meta.emoji;
 
   const [showCheck, setShowCheck] = useState(false);
-
-  useEffect(() => {
-    if (!prevPurchased.current && item.purchased) {
-      setShowCheck(true);
-      const t = setTimeout(() => setShowCheck(false), 700);
-      return () => clearTimeout(t);
-    }
-    prevPurchased.current = item.purchased;
-  }, [item.purchased]);
 
   const startHold = (e) => {
     startPos.current = { x: e.clientX, y: e.clientY };
@@ -29,7 +19,12 @@ export default function ItemBlock({ item, onTap, onHold, aisleMeta }) {
     holdTimer.current = setTimeout(() => {
       didHold.current = true;
       holdJustFired = true;
-      onHold?.(item.id);
+      if (!item.purchased) {
+        setShowCheck(true);
+        setTimeout(() => onHold?.(item.id), 350);
+      } else {
+        onHold?.(item.id);
+      }
     }, 500);
   };
 

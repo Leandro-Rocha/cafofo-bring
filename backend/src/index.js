@@ -35,7 +35,7 @@ wa.setAudioMessageHandler(async (text, reply) => {
 
   const names = cleaned
     .split(/,|\s+e\s+|\s+mais\s+/i)
-    .map((s) => s.trim())
+    .map((s) => s.trim().replace(/[.,!?;:]+$/, '').trim())
     .filter(Boolean);
 
   if (!names.length) {

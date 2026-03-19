@@ -305,4 +305,5 @@ module.exports = {
   setAudioMessageHandler,
   getAudioMessageHandler,
   transcribeAudio,
+  flushNow: flush,
 };

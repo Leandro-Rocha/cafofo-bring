@@ -104,6 +104,12 @@ app.get('/debug/zap', async (req, res) => {
   res.json(await wa.getStatus());
 });
 
+app.post('/debug/zap/flush', async (req, res) => {
+  wa.queueEvent('added', 'Teste debug', 'App');
+  await wa.flushNow();
+  res.json({ ok: true });
+});
+
 // Serve frontend static files if present (production)
 const path = require('path');
 const frontendPath = path.join(__dirname, '../public');

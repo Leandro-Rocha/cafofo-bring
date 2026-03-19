@@ -1,10 +1,20 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { getCategoryMeta } from '../categories';
 
 export default function ItemActionSheet({ item, aisles, onMove, onDelete, onToggle, onRename, onClose }) {
   const [editing, setEditing] = useState(false);
   const mountedAt = useRef(Date.now());
   const safeClose = () => { if (Date.now() - mountedAt.current > 200) onClose(); };
+
+  useEffect(() => {
+    history.pushState({ modal: 'item' }, '');
+    const handlePop = () => onClose();
+    window.addEventListener('popstate', handlePop);
+    return () => {
+      window.removeEventListener('popstate', handlePop);
+      if (history.state?.modal === 'item') history.back();
+    };
+  }, []);
   const [nameVal, setNameVal] = useState(item.name);
   const [quantityVal, setQuantityVal] = useState(item.quantity || '');
   const visibleAisles = aisles ? aisles.filter((a) => !a.hidden) : [];

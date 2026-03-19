@@ -38,8 +38,8 @@ wa.setAudioMessageHandler(async (text, reply) => {
       .replace(/\bna\s+lista\b/gi, '')
       .trim()
       .split(/,|\s+e\s+|\s+mais\s+/i)
-      .map((s) => s.trim().replace(/[.,!?;:]+$/, '').trim())
-      .filter(Boolean);
+      .map((s) => ({ name: s.trim().replace(/[.,!?;:]+$/, '').trim(), obs: null }))
+      .filter((i) => i.name);
   }
 
   if (!names.length) {
@@ -49,14 +49,14 @@ wa.setAudioMessageHandler(async (text, reply) => {
 
   const added = [];
   const skipped = [];
-  for (const name of names) {
+  for (const { name, obs } of names) {
     const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
     const existing = db.prepare('SELECT id FROM items WHERE lower(name) = lower(?) AND purchased = 0').get(capitalized);
     if (existing) { skipped.push(capitalized); continue; }
     const remembered = db.prepare('SELECT category FROM item_defaults WHERE name_normalized = ?').get(name.toLowerCase());
     const category = remembered?.category || 'Outros';
     const emoji = detectEmoji(capitalized);
-    const result = db.prepare('INSERT INTO items (name, category, emoji) VALUES (?, ?, ?)').run(capitalized, category, emoji);
+    const result = db.prepare('INSERT INTO items (name, category, quantity, emoji) VALUES (?, ?, ?, ?)').run(capitalized, category, obs || null, emoji);
     const item = db.prepare('SELECT * FROM items WHERE id = ?').get(result.lastInsertRowid);
     io.emit('item:added', item);
     db.prepare(`
@@ -66,7 +66,7 @@ wa.setAudioMessageHandler(async (text, reply) => {
         count = count + 1, display_name = excluded.display_name, last_added_at = CURRENT_TIMESTAMP
     `).run(name.toLowerCase(), capitalized);
     wa.queueEvent('added', capitalized, 'WhatsApp');
-    added.push(capitalized);
+    added.push(obs ? `${capitalized} (${obs})` : capitalized);
   }
 
   const parts = [];

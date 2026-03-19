@@ -101,7 +101,13 @@ async function parseItemsFromText(text) {
       messages: [
         {
           role: 'system',
-          content: 'Você extrai itens de lista de compras de mensagens em português. Responda APENAS com JSON no formato {"items": ["item1", "item2"]}. Normalize os nomes: sem pontuação, sem artigos desnecessários, primeira letra maiúscula. Se não houver itens de compra na mensagem, retorne {"items": []}.',
+          content: `Você extrai itens de lista de compras de mensagens em português.
+Responda APENAS com JSON no formato {"items": [{"name": "Nome do item", "obs": "observação opcional"}]}.
+Regras:
+- "name": apenas o produto principal, primeira letra maiúscula, sem artigos desnecessários.
+- "obs": detalhes como quantidade, marca, restrição, destinatário, ou qualquer qualificação. Omita se não houver.
+- Exemplos: "suco para miguel" → name:"Suco", obs:"Para Miguel". "peito de frango sem osso" → name:"Peito de frango", obs:"Sem osso". "2 litros de leite integral" → name:"Leite integral", obs:"2 litros".
+- Se não houver itens de compra, retorne {"items": []}.`,
         },
         { role: 'user', content: text },
       ],
@@ -111,7 +117,10 @@ async function parseItemsFromText(text) {
   if (!res.ok) return null;
   const data = await res.json();
   const parsed = JSON.parse(data.choices[0].message.content);
-  return Array.isArray(parsed.items) ? parsed.items.filter(Boolean) : null;
+  if (!Array.isArray(parsed.items)) return null;
+  return parsed.items
+    .filter((i) => i?.name)
+    .map((i) => ({ name: i.name, obs: i.obs || null }));
 }
 
 async function transcribeAudio(buffer, mimetype) {

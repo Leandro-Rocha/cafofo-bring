@@ -25,7 +25,7 @@ app.use(cors());
 app.post('/alexa', require('./routes/alexa')(io));
 app.get('/alexa', (_, res) => res.json({ ok: true, endpoint: 'alexa' }));
 
-app.use(express.json());
+app.use(express.json({ limit: '20mb' }));
 app.set('io', io);
 
 wa.setAudioMessageHandler(async (text, reply) => {

@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 const wa = require('../zap');
 
-router.get('/status', (req, res) => {
-  res.json(wa.getStatus());
+router.get('/status', async (req, res) => {
+  res.json(await wa.getStatus());
 });
 
 router.get('/groups', async (req, res) => {

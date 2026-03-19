@@ -90,7 +90,6 @@ app.post('/webhook/zap', (req, res) => {
 app.use('/api/items', itemsRouter);
 app.use('/api/aisles', require('./routes/aisles'));
 app.use('/api/whatsapp', require('./routes/whatsapp'));
-app.use('/api/notify', require('./routes/notify'));
 app.get('/health', (_, res) => res.json({ ok: true }));
 
 // Serve frontend static files if present (production)

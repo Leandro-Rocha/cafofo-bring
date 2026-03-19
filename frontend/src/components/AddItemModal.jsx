@@ -16,6 +16,16 @@ export default function AddItemModal({ onAdd, onClose, aisles }) {
     fetchFrequent(16).then(setFrequent).catch(() => {});
   }, []);
 
+  useEffect(() => {
+    history.pushState({ modal: true }, '');
+    const handlePop = () => onClose();
+    window.addEventListener('popstate', handlePop);
+    return () => {
+      window.removeEventListener('popstate', handlePop);
+      if (history.state?.modal) history.back();
+    };
+  }, [onClose]);
+
   // Use server aisles if provided, filtering out hidden ones; fall back to hardcoded categories
   const visibleCategories = aisles
     ? aisles.filter((a) => !a.hidden)

@@ -54,6 +54,8 @@ function handle(body) {
       if (!item) return ask('Qual item você quer adicionar?', 'Diga o nome do item.');
 
       const capitalized = item.charAt(0).toUpperCase() + item.slice(1);
+      const existing = db.prepare('SELECT id FROM items WHERE lower(name) = lower(?) AND purchased = 0').get(capitalized);
+      if (existing) return ask(`${capitalized} já está na lista. Mais algum item?`, 'Pode falar o próximo item, ou diga é só para terminar.');
       const emoji = detectEmoji(capitalized);
       const remembered = db.prepare(
         'SELECT category FROM item_defaults WHERE name_normalized = ?'

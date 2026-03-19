@@ -17,6 +17,7 @@ export async function addItem(data) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
+  if (res.status === 409) return res.json(); // item já existe — retorna o existente sem erro
   if (!res.ok) throw new Error('Erro ao adicionar item');
   return res.json();
 }

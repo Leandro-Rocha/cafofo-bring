@@ -48,8 +48,11 @@ wa.setAudioMessageHandler(async (text, reply) => {
   }
 
   const added = [];
+  const skipped = [];
   for (const name of names) {
     const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
+    const existing = db.prepare('SELECT id FROM items WHERE lower(name) = lower(?) AND purchased = 0').get(capitalized);
+    if (existing) { skipped.push(capitalized); continue; }
     const remembered = db.prepare('SELECT category FROM item_defaults WHERE name_normalized = ?').get(name.toLowerCase());
     const category = remembered?.category || 'Outros';
     const emoji = detectEmoji(capitalized);
@@ -66,7 +69,10 @@ wa.setAudioMessageHandler(async (text, reply) => {
     added.push(capitalized);
   }
 
-  await reply(`✅ ${added.length > 1 ? 'Adicionados' : 'Adicionado'}: ${added.join(', ')}`);
+  const parts = [];
+  if (added.length) parts.push(`✅ ${added.length > 1 ? 'Adicionados' : 'Adicionado'}: ${added.join(', ')}`);
+  if (skipped.length) parts.push(`⚠️ Já ${skipped.length > 1 ? 'estão' : 'está'} na lista: ${skipped.join(', ')}`);
+  await reply(parts.join('\n'));
 });
 
 app.use('/api/items', itemsRouter);

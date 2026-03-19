@@ -55,6 +55,9 @@ router.post('/', (req, res) => {
     ).run(normalizeName(capitalized), category);
   }
 
+  const existing = db.prepare('SELECT * FROM items WHERE lower(name) = lower(?) AND purchased = 0').get(capitalized);
+  if (existing) return res.status(409).json({ error: 'Item já está na lista', item: existing });
+
   const result = db.prepare(
     'INSERT INTO items (name, category, quantity, emoji) VALUES (?, ?, ?, ?)'
   ).run(capitalized, resolvedCategory, quantity?.trim() || null, emoji || null);

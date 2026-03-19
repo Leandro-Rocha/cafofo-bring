@@ -3,11 +3,6 @@ const router = express.Router();
 const wa = require('../whatsapp');
 
 router.post('/deploy', (req, res) => {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  if (process.env.NOTIFY_TOKEN && token !== process.env.NOTIFY_TOKEN) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
   const { commit, branch, actor, status } = req.body;
   const lines = [`🚀 *Cafofo Bring* — ${status || 'deploy concluído!'}`];
   if (actor) lines.push(`👤 ${actor}`);

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const wa = require('../whatsapp');
+const wa = require('../zap');
 
 router.get('/status', (req, res) => {
   res.json(wa.getStatus());

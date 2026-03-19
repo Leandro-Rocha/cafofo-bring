@@ -5,9 +5,9 @@ const cors = require('cors');
 const itemsRouter = require('./routes/items');
 
 const db = require('./db');
-const wa = require('./whatsapp');
+const wa = require('./zap');
 const { detectEmoji } = require('./emojiDetection');
-wa.connect().catch((err) => console.error('[whatsapp] falha ao conectar:', err.message));
+wa.connect().catch((err) => console.error('[zap] falha ao conectar:', err.message));
 
 const app = express();
 const server = http.createServer(app);
@@ -73,6 +73,18 @@ wa.setAudioMessageHandler(async (text, reply) => {
   if (added.length) parts.push(`✅ ${added.length > 1 ? 'Adicionados' : 'Adicionado'}: ${added.join(', ')}`);
   if (skipped.length) parts.push(`⚠️ Já ${skipped.length > 1 ? 'estão' : 'está'} na lista: ${skipped.join(', ')}`);
   await reply(parts.join('\n'));
+});
+
+app.post('/webhook/zap', (req, res) => {
+  res.json({ ok: true });
+  const { type, transcription } = req.body;
+  if (type === 'audio' && transcription) {
+    const handler = wa.getAudioMessageHandler();
+    if (handler) {
+      const reply = (text) => wa.sendMessage(text).catch(console.error);
+      handler(transcription, reply).catch(console.error);
+    }
+  }
 });
 
 app.use('/api/items', itemsRouter);

@@ -77,22 +77,14 @@ wa.setAudioMessageHandler(async (text, reply) => {
 
 app.post('/webhook/zap', (req, res) => {
   res.json({ ok: true });
-  const { type, transcription, audioBase64, mimetype } = req.body;
-  if (type !== 'audio') return;
+  const { type, transcription } = req.body;
+  if (type !== 'audio' || !transcription) return;
 
   const handler = wa.getAudioMessageHandler();
   if (!handler) return;
 
   const reply = (text) => wa.sendMessage(text).catch(console.error);
-
-  if (transcription) {
-    handler(transcription, reply).catch(console.error);
-  } else if (audioBase64) {
-    const buffer = Buffer.from(audioBase64, 'base64');
-    wa.transcribeAudio(buffer, mimetype)
-      .then((text) => handler(text, reply))
-      .catch((err) => console.error('[webhook/zap] erro ao transcrever:', err.message));
-  }
+  handler(transcription, reply).catch(console.error);
 });
 
 app.use('/api/items', itemsRouter);

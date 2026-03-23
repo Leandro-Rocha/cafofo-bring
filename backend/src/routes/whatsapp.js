@@ -33,11 +33,6 @@ router.post('/interval', (req, res) => {
   res.json({ ok: true });
 });
 
-router.post('/groq-key', (req, res) => {
-  wa.setGroqApiKey(req.body.key || null);
-  res.json({ ok: true });
-});
-
 router.post('/disconnect', (req, res) => {
   wa.disconnect();
   res.json({ ok: true });

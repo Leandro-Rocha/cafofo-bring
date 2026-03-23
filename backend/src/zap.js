@@ -14,7 +14,6 @@ let config = {
   notifyGroupId: null,
   notifyGroupName: null,
   intervalMinutes: parseInt(process.env.WA_NOTIFY_INTERVAL) || 10,
-  groqApiKey: null,
   webhookId: null,
 };
 
@@ -74,7 +73,7 @@ async function flush() {
 // --- Groq (LLM item parsing) ---
 
 async function parseItemsFromText(text) {
-  const apiKey = config.groqApiKey || process.env.GROQ_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) return null;
 
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -109,29 +108,6 @@ Regras:
     .map((i) => ({ name: i.name, obs: i.obs || null }));
 }
 
-// --- Transcrição de áudio (fallback se cafofo-zap não transcrever) ---
-
-async function transcribeAudio(buffer, mimetype) {
-  const apiKey = config.groqApiKey || process.env.GROQ_API_KEY;
-  if (!apiKey) throw new Error('GROQ_API_KEY não configurada');
-
-  const ext = (mimetype || '').includes('ogg') ? 'ogg' : 'mp4';
-  const form = new FormData();
-  form.append('file', new Blob([buffer], { type: mimetype || 'audio/ogg' }), `audio.${ext}`);
-  form.append('model', 'whisper-large-v3-turbo');
-  form.append('language', 'pt');
-  form.append('response_format', 'text');
-
-  const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}` },
-    body: form,
-  });
-
-  if (!res.ok) throw new Error(`Groq ${res.status}: ${await res.text()}`);
-  return (await res.text()).trim();
-}
-
 // --- HTTP helper ---
 
 async function zapFetch(urlPath, options = {}) {
@@ -160,6 +136,7 @@ async function registerWebhook() {
       url: `${SELF_URL}${WEBHOOK_PATH}`,
       groupId: config.groupId,
       events: ['audio'],
+      transcribe: true,
     }),
   });
 
@@ -236,7 +213,6 @@ async function getStatus() {
     notifyGroupName: config.notifyGroupName,
     notifyGroupId: config.notifyGroupId,
     intervalMinutes: config.intervalMinutes,
-    hasGroqKey: !!(config.groqApiKey || process.env.GROQ_API_KEY),
     qr: zapStatus?.qr || null,
   };
 }
@@ -265,11 +241,6 @@ function setIntervalMinutes(minutes) {
   saveConfig();
 }
 
-function setGroqApiKey(key) {
-  config.groqApiKey = key || null;
-  saveConfig();
-}
-
 async function disconnect() {
   if (config.webhookId) {
     try {
@@ -289,7 +260,6 @@ module.exports = {
   setGroup,
   setNotifyGroup,
   setIntervalMinutes,
-  setGroqApiKey,
   parseItemsFromText,
   sendMessage,
   sendNotifyMessage,
@@ -297,5 +267,4 @@ module.exports = {
   disconnect,
   setAudioMessageHandler,
   getAudioMessageHandler,
-  transcribeAudio,
 };

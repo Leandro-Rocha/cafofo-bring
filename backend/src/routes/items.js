@@ -64,6 +64,7 @@ router.post('/', (req, res) => {
 
   const item = db.prepare('SELECT * FROM items WHERE id = ?').get(result.lastInsertRowid);
   upsertHistory(db, normalizeName(capitalized), capitalized, item.emoji);
+  console.log(`[ITEM] u2705 Adicionado: "${capitalized}" (categoria: ${resolvedCategory}, qtd: ${quantity || '-'})`);
   wa.queueEvent('added', capitalized, 'App');
   req.app.get('io').emit('item:added', item);
   res.status(201).json(item);
@@ -80,6 +81,7 @@ router.patch('/:id/name', (req, res) => {
   const { quantity } = req.body;
   db.prepare('UPDATE items SET name = ?, quantity = ? WHERE id = ?')
     .run(capitalized, quantity?.trim() || null, req.params.id);
+  console.log(`[ITEM] u270fufe0f  Renomeado: "${item.name}" u2192 "${capitalized}" (qtd: ${quantity?.trim() || '-'})`);
 
   // Keep history display_name in sync
   db.prepare('UPDATE item_history SET display_name = ? WHERE name_normalized = ?')
@@ -98,6 +100,7 @@ router.patch('/:id/category', (req, res) => {
   if (!item) return res.status(404).json({ error: 'Item não encontrado' });
 
   db.prepare('UPDATE items SET category = ? WHERE id = ?').run(category, req.params.id);
+  console.log(`[ITEM]   Categoria: "${item.name}"  "${category}"`);
 
   // Save/update remembered category for this item name
   db.prepare(
@@ -118,6 +121,7 @@ router.patch('/:id/toggle', (req, res) => {
 
   db.prepare('UPDATE items SET purchased = ?, purchased_at = ? WHERE id = ?')
     .run(purchased, purchased_at, req.params.id);
+  console.log(`[ITEM] ${purchased ? 'ud83duded2 Comprado' : 'u21a9ufe0f  Desmarcado'}: "${item.name}"`);
 
   if (purchased) wa.queueEvent('purchased', item.name, null);
 
@@ -128,6 +132,7 @@ router.patch('/:id/toggle', (req, res) => {
 
 router.delete('/purchased/clear', (req, res) => {
   db.prepare('DELETE FROM items WHERE purchased = 1').run();
+  console.log('[ITEM]  Comprados limpos');
   wa.queueEvent('cleared', null, null);
   req.app.get('io').emit('purchased:cleared');
   res.status(204).end();
@@ -136,6 +141,7 @@ router.delete('/purchased/clear', (req, res) => {
 router.delete('/:id', (req, res) => {
   const item = db.prepare('SELECT * FROM items WHERE id = ?').get(req.params.id);
   db.prepare('DELETE FROM items WHERE id = ?').run(req.params.id);
+  console.log(`[ITEM]   Removido: "${item.name}"`);
   if (item) wa.queueEvent('removed', item.name, 'App');
   req.app.get('io').emit('item:deleted', { id: parseInt(req.params.id) });
   res.status(204).end();

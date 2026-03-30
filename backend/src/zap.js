@@ -75,6 +75,7 @@ async function flush() {
 async function parseItemsFromText(text) {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) return null;
+  console.log(`[GROQ]  Input: ${text.slice(0, 200)}`);
 
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
@@ -99,13 +100,40 @@ Regras:
     }),
   });
 
-  if (!res.ok) return null;
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => '');
+    console.error(`[GROQ] ❌ Erro HTTP ${res.status}: ${errBody.slice(0, 300)}`);
+    return null;
+  }
   const data = await res.json();
-  const parsed = JSON.parse(data.choices[0].message.content);
-  if (!Array.isArray(parsed.items)) return null;
-  return parsed.items
-    .filter((i) => i?.name)
+  const rawContent = data.choices[0].message.content;
+  console.log(`[GROQ] 📤 Resposta bruta: ${rawContent}`);
+  let parsed;
+  try {
+    parsed = JSON.parse(rawContent);
+  } catch (e) {
+    console.error(`[GROQ] ❌ Falha ao parsear JSON: ${e.message}`);
+    return null;
+  }
+  if (!Array.isArray(parsed.items)) {
+    console.warn(`[GROQ] ⚠️  Campo "items" ausente ou inválido:`, parsed);
+    return null;
+  }
+  // Gravar log de debug em arquivo
+  try {
+    const debugEntry = JSON.stringify({
+      ts: new Date().toISOString(),
+      input: text,
+      raw: rawContent,
+      parsed: parsed.items
+    }) + '\n';
+    fs.appendFileSync(path.join(DATA_DIR, 'groq_debug.jsonl'), debugEntry);
+  } catch (_) {}
+  const result = parsed.items
+    .filter((i) => i.name)
     .map((i) => ({ name: i.name, obs: i.obs || null }));
+  console.log(`[GROQ] ✅ Itens identificados: ${JSON.stringify(result)}`);
+  return result;
 }
 
 // --- HTTP helper ---

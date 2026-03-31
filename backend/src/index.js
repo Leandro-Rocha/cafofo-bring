@@ -28,15 +28,30 @@ app.get('/alexa', (_, res) => res.json({ ok: true, endpoint: 'alexa' }));
 app.use(express.json({ limit: '20mb' }));
 app.set('io', io);
 
-wa.setAudioMessageHandler(async (text, reply) => {
+// Remove leading action phrases and "na lista" / "a lista" / "à lista" from transcriptions.
+// E.g. "Adicionando à lista manga" → "manga"
+//      "Adiciono na lista pasta de amendoim" → "pasta de amendoim"
+function normalizeTranscription(text) {
+  return text
+    .replace(/^(adicion(?:ando|ar?|o)|coloca[r]?|bota[r]?|põe|preciso\s+de|quero\s+que\s+adicione[s]?|quero|compra[r]?)\s*/i, '')
+    .replace(/^(?:[aà]|na)\s+lista\b[,:\s]*/i, '')
+    .replace(/\b(?:[aà]|na)\s+lista\b/gi, '')
+    .trim();
+}
+
+wa.setAudioMessageHandler(async (rawText, reply) => {
+  const text = normalizeTranscription(rawText);
+
+  if (!text) {
+    await reply('❓ Não entendi o que adicionar.');
+    return;
+  }
+
   let names = await wa.parseItemsFromText(text);
 
   if (!names) {
     // Fallback: regex simples se Groq não estiver disponível
     names = text
-      .replace(/^(adiciona[r]?|coloca[r]?|bota[r]?|põe|preciso\s+de|quero\s+que\s+adicione[s]?|quero|compra[r]?)\s+/i, '')
-      .replace(/\bna\s+lista\b/gi, '')
-      .trim()
       .split(/,|\s+e\s+|\s+mais\s+/i)
       .map((s) => ({ name: s.trim().replace(/[.,!?;:]+$/, '').trim(), obs: null }))
       .filter((i) => i.name);

@@ -91,9 +91,17 @@ async function parseItemsFromText(text) {
 Responda APENAS com JSON no formato {"items": [{"name": "Nome do item", "obs": "observação opcional"}]}.
 Regras:
 - "name": apenas o produto principal, primeira letra maiúscula, sem artigos desnecessários.
-- "obs": detalhes como quantidade, marca, restrição, destinatário, ou qualquer qualificação. Omita se não houver.
-- Ignore completamente verbos de ação e frases introdutórias como "adiciono", "adiciona", "adicione", "coloca", "coloque", "preciso de", "quero", "me lembra de", "não esquece de", "pode colocar", "na lista", "na listinha", etc. Nunca inclua essas palavras no "name".
-- Exemplos: "suco para miguel" → name:"Suco", obs:"Para Miguel". "peito de frango sem osso" → name:"Peito de frango", obs:"Sem osso". "2 litros de leite integral" → name:"Leite integral", obs:"2 litros". "adiciono na lista pasta de amendoim integral" → name:"Pasta de amendoim integral", obs:null. "coloca azeite extravirgem e papel toalha" → name:"Azeite extravirgem", obs:null e name:"Papel toalha", obs:null.
+- "obs": quantidade, marca, peso, restrição, destinatário. Omita se não houver.
+- Nunca inclua no "name" verbos ou frases de ação: adiciono, adiciona, adicionando, coloca, coloque, preciso de, quero, me lembra, não esquece, pode colocar, na lista, a lista, à lista, etc.
+- Exemplos:
+  "sabonete" → name:"Sabonete"
+  "manga" → name:"Manga"
+  "pasta de amendoim integral" → name:"Pasta de amendoim integral"
+  "filé de peixe sem espinho congelado" → name:"Filé de peixe sem espinho congelado"
+  "torrada integral leve magic tost marilã 110 gramas" → name:"Torrada integral leve magic tost marilã", obs:"110g"
+  "suco para miguel" → name:"Suco", obs:"Para Miguel"
+  "2 litros de leite integral" → name:"Leite integral", obs:"2 litros"
+  "azeite extravirgem e papel toalha" → name:"Azeite extravirgem" e name:"Papel toalha"
 - Se não houver itens de compra, retorne {"items": []}.`,
         },
         { role: 'user', content: text },

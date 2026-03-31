@@ -84,6 +84,9 @@ wa.setAudioMessageHandler(async (rawText, reply) => {
   await reply(parts.join('\n'));
 });
 
+// Serial queue: processes one audio message at a time to avoid Groq rate limits
+let audioQueue = Promise.resolve();
+
 app.post('/webhook/zap', (req, res) => {
   res.json({ ok: true });
   const { type, transcription } = req.body;
@@ -93,7 +96,7 @@ app.post('/webhook/zap', (req, res) => {
   if (!handler) return;
 
   const reply = (text) => wa.sendMessage(text).catch(console.error);
-  handler(transcription, reply).catch(console.error);
+  audioQueue = audioQueue.then(() => handler(transcription, reply).catch(console.error));
 });
 
 app.use('/api/items', itemsRouter);

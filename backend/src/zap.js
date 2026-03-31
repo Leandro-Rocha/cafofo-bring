@@ -72,10 +72,10 @@ async function flush() {
 
 // --- Groq (LLM item parsing) ---
 
-async function parseItemsFromText(text) {
+async function parseItemsFromText(text, { attempt = 1, maxAttempts = 4 } = {}) {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) return null;
-  console.log(`[GROQ]  Input: ${text.slice(0, 200)}`);
+  if (attempt === 1) console.log(`[GROQ]  Input: ${text.slice(0, 200)}`);
 
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
@@ -114,6 +114,14 @@ Regras:
 
   if (!res.ok) {
     const errBody = await res.text().catch(() => '');
+    if (res.status === 429 && attempt < maxAttempts) {
+      // Try to read retry-after from headers, else use exponential backoff
+      const retryAfter = parseInt(res.headers.get('retry-after') || '0', 10);
+      const delay = retryAfter > 0 ? retryAfter * 1000 : Math.min(2 ** attempt * 1000, 16000);
+      console.warn(`[GROQ] ⏳ Rate limit (tentativa ${attempt}/${maxAttempts}), aguardando ${delay}ms...`);
+      await new Promise((r) => setTimeout(r, delay));
+      return parseItemsFromText(text, { attempt: attempt + 1, maxAttempts });
+    }
     console.error(`[GROQ] ❌ Erro HTTP ${res.status}: ${errBody.slice(0, 300)}`);
     return null;
   }

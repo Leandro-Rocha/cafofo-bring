@@ -1,10 +1,6 @@
 const db = require('../db');
-const { detectEmoji } = require('../emojiDetection');
 const wa = require('../zap');
-
-function normalizeName(name) {
-  return name.toLowerCase().trim();
-}
+const { addItem } = require('../itemService');
 
 let io;
 
@@ -53,30 +49,13 @@ function handle(body) {
       const item = slots?.item?.value;
       if (!item) return ask('Qual item você quer adicionar?', 'Diga o nome do item.');
 
-      const capitalized = item.charAt(0).toUpperCase() + item.slice(1);
-      const existing = db.prepare('SELECT id FROM items WHERE lower(name) = lower(?) AND purchased = 0').get(capitalized);
-      if (existing) return ask(`${capitalized} já está na lista. Mais algum item?`, 'Pode falar o próximo item, ou diga é só para terminar.');
-      const emoji = detectEmoji(capitalized);
-      const remembered = db.prepare(
-        'SELECT category FROM item_defaults WHERE name_normalized = ?'
-      ).get(normalizeName(capitalized));
-      const category = remembered?.category || 'Outros';
-      const result = db.prepare(
-        'INSERT INTO items (name, category, quantity, emoji) VALUES (?, ?, ?, ?)'
-      ).run(capitalized, category, null, emoji);
-
-      const newItem = db.prepare('SELECT * FROM items WHERE id = ?').get(result.lastInsertRowid);
-      db.prepare(`
-        INSERT INTO item_history (name_normalized, display_name, emoji, count, last_added_at)
-        VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP)
-        ON CONFLICT(name_normalized) DO UPDATE SET
-          count = count + 1,
-          display_name = excluded.display_name,
-          emoji = excluded.emoji,
-          last_added_at = CURRENT_TIMESTAMP
-      `).run(normalizeName(capitalized), capitalized, newItem.emoji || null);
-      wa.queueEvent('added', capitalized, 'Alexa');
-      io?.emit('item:added', newItem);
+      const result = addItem({ name: item });
+      if (result.duplicate) {
+        return ask(`${result.duplicate.name} já está na lista. Mais algum item?`, 'Pode falar o próximo item, ou diga é só para terminar.');
+      }
+      wa.queueEvent('added', result.item.name, 'Alexa');
+      io?.emit('item:added', result.item);
+      const capitalized = result.item.name;
 
       return ask(`${capitalized} adicionado. Mais algum item?`, 'Pode falar o próximo item, ou diga é só para terminar.');
     }

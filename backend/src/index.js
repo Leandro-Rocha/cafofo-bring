@@ -6,7 +6,7 @@ const itemsRouter = require('./routes/items');
 
 const db = require('./db');
 const wa = require('./zap');
-const { detectEmoji } = require('./emojiDetection');
+const { addItem } = require('./itemService');
 wa.connect().catch((err) => console.error('[zap] falha ao conectar:', err.message));
 
 const app = express();
@@ -50,23 +50,15 @@ wa.setAudioMessageHandler(async (text, reply) => {
   const added = [];
   const skipped = [];
   for (const { name, obs } of names) {
-    const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
-    const existing = db.prepare('SELECT id FROM items WHERE lower(name) = lower(?) AND purchased = 0').get(capitalized);
-    if (existing) { skipped.push(capitalized); continue; }
-    const remembered = db.prepare('SELECT category FROM item_defaults WHERE name_normalized = ?').get(name.toLowerCase());
-    const category = remembered?.category || 'Outros';
-    const emoji = detectEmoji(capitalized);
-    const result = db.prepare('INSERT INTO items (name, category, quantity, emoji) VALUES (?, ?, ?, ?)').run(capitalized, category, obs || null, emoji);
-    const item = db.prepare('SELECT * FROM items WHERE id = ?').get(result.lastInsertRowid);
-    io.emit('item:added', item);
-    db.prepare(`
-      INSERT INTO item_history (name_normalized, display_name, emoji, count, last_added_at)
-      VALUES (?, ?, NULL, 1, CURRENT_TIMESTAMP)
-      ON CONFLICT(name_normalized) DO UPDATE SET
-        count = count + 1, display_name = excluded.display_name, last_added_at = CURRENT_TIMESTAMP
-    `).run(name.toLowerCase(), capitalized);
-    wa.queueEvent('added', capitalized, 'WhatsApp');
-    added.push(obs ? `${capitalized} (${obs})` : capitalized);
+    const result = addItem({ name, quantity: obs || null });
+    if (result.duplicate) {
+      const cap = result.duplicate.name;
+      skipped.push(cap);
+      continue;
+    }
+    io.emit('item:added', result.item);
+    wa.queueEvent('added', result.item.name, 'WhatsApp');
+    added.push(obs ? `${result.item.name} (${obs})` : result.item.name);
   }
 
   const parts = [];

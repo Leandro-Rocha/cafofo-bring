@@ -2,21 +2,10 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const wa = require('../zap');
+const { addItem } = require('../itemService');
 
 function normalizeName(name) {
   return name.toLowerCase().trim();
-}
-
-function upsertHistory(db, nameNormalized, displayName, emoji) {
-  db.prepare(`
-    INSERT INTO item_history (name_normalized, display_name, emoji, count, last_added_at)
-    VALUES (?, ?, ?, 1, CURRENT_TIMESTAMP)
-    ON CONFLICT(name_normalized) DO UPDATE SET
-      count = count + 1,
-      display_name = excluded.display_name,
-      emoji = excluded.emoji,
-      last_added_at = CURRENT_TIMESTAMP
-  `).run(nameNormalized, displayName, emoji || null);
 }
 
 router.get('/frequent', (req, res) => {
@@ -38,36 +27,22 @@ router.post('/', (req, res) => {
   const { name, category = 'Outros', quantity, emoji } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: 'Nome obrigatório' });
 
-  const normalized = name.trim();
-  const capitalized = normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  const capitalized = name.trim().charAt(0).toUpperCase() + name.trim().slice(1);
 
-  // Check remembered category for this item name
-  const remembered = db.prepare(
-    'SELECT category FROM item_defaults WHERE name_normalized = ?'
-  ).get(normalizeName(capitalized));
-
-  const resolvedCategory = remembered?.category || category;
-
-  // If user explicitly picked a non-"Outros" category, save/update the default
+  // If user explicitly picked a non-"Outros" category, persist it as default
   if (category !== 'Outros') {
     db.prepare(
       'INSERT INTO item_defaults (name_normalized, category) VALUES (?, ?) ON CONFLICT(name_normalized) DO UPDATE SET category = excluded.category'
     ).run(normalizeName(capitalized), category);
   }
 
-  const existing = db.prepare('SELECT * FROM items WHERE lower(name) = lower(?) AND purchased = 0').get(capitalized);
-  if (existing) return res.status(409).json({ error: 'Item já está na lista', item: existing });
+  const result = addItem({ name, category, quantity: quantity?.trim() || null, emoji: emoji || null });
+  if (result.duplicate) return res.status(409).json({ error: 'Item já está na lista', item: result.duplicate });
 
-  const result = db.prepare(
-    'INSERT INTO items (name, category, quantity, emoji) VALUES (?, ?, ?, ?)'
-  ).run(capitalized, resolvedCategory, quantity?.trim() || null, emoji || null);
-
-  const item = db.prepare('SELECT * FROM items WHERE id = ?').get(result.lastInsertRowid);
-  upsertHistory(db, normalizeName(capitalized), capitalized, item.emoji);
-  console.log(`[ITEM] u2705 Adicionado: "${capitalized}" (categoria: ${resolvedCategory}, qtd: ${quantity || '-'})`);
-  wa.queueEvent('added', capitalized, 'App');
-  req.app.get('io').emit('item:added', item);
-  res.status(201).json(item);
+  console.log(`[ITEM] ✅ Adicionado: "${result.item.name}" (categoria: ${result.item.category}, qtd: ${quantity || '-'})`);
+  wa.queueEvent('added', result.item.name, 'App');
+  req.app.get('io').emit('item:added', result.item);
+  res.status(201).json(result.item);
 });
 
 router.patch('/:id/name', (req, res) => {

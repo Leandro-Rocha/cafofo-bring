@@ -64,16 +64,18 @@ wa.setAudioMessageHandler(async (rawText, reply) => {
 
   const added = [];
   const skipped = [];
-  for (const { name, obs } of names) {
+  for (const { name, obs, corrected_from } of names) {
     const result = addItem({ name, quantity: obs || null });
     if (result.duplicate) {
-      const cap = result.duplicate.name;
-      skipped.push(cap);
+      skipped.push(result.duplicate.name);
       continue;
     }
     io.emit('item:added', result.item);
     wa.queueEvent('added', result.item.name, 'WhatsApp');
-    added.push(obs ? `${result.item.name} (${obs})` : result.item.name);
+    let label = result.item.name;
+    if (obs) label += ` (${obs})`;
+    if (corrected_from) label += ` _(corrigido de "${corrected_from}")_`;
+    added.push(label);
   }
 
   const parts = [];

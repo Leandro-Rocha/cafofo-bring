@@ -88,14 +88,17 @@ async function parseItemsFromText(text) {
         {
           role: 'system',
           content: `Você extrai itens de lista de compras de mensagens em português.
-Responda APENAS com JSON no formato {"items": [{"name": "Nome do item", "obs": "observação opcional"}]}.
+Responda APENAS com JSON no formato {"items": [{"name": "...", "obs": "...", "corrected_from": "..."}]}.
 Regras:
-- "name": apenas o produto principal, primeira letra maiúscula, sem artigos desnecessários.
+- "name": produto principal, primeira letra maiúscula, sem artigos desnecessários.
 - "obs": quantidade, marca, peso, restrição, destinatário. Omita se não houver.
-- Nunca inclua no "name" verbos ou frases de ação: adiciono, adiciona, adicionando, coloca, coloque, preciso de, quero, me lembra, não esquece, pode colocar, na lista, a lista, à lista, etc.
+- "corrected_from": preencha SOMENTE se a palavra transcrita não existe em português mas soa como um produto real (erro de transcrição de áudio). Coloque a palavra original transcrita. Omita se o nome estiver correto.
+- Nunca inclua no "name" verbos ou frases de ação: adiciono, adicionando, coloca, preciso de, quero, na lista, etc.
 - Exemplos:
   "sabonete" → name:"Sabonete"
   "manga" → name:"Manga"
+  "mucula" → name:"Rúcula", corrected_from:"mucula"
+  "rucura" → name:"Rúcula", corrected_from:"rucura"
   "pasta de amendoim integral" → name:"Pasta de amendoim integral"
   "filé de peixe sem espinho congelado" → name:"Filé de peixe sem espinho congelado"
   "torrada integral leve magic tost marilã 110 gramas" → name:"Torrada integral leve magic tost marilã", obs:"110g"
@@ -140,7 +143,7 @@ Regras:
   } catch (_) {}
   const result = parsed.items
     .filter((i) => i.name)
-    .map((i) => ({ name: i.name, obs: i.obs || null }));
+    .map((i) => ({ name: i.name, obs: i.obs || null, corrected_from: i.corrected_from || null }));
   console.log(`[GROQ] ✅ Itens identificados: ${JSON.stringify(result)}`);
   return result;
 }
